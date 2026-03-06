@@ -1,0 +1,528 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// ENUMS
+// =============================================
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  CASHIER
+  ACCOUNTANT
+}
+
+enum IdType {
+  CC  // Cédula de ciudadanía
+  NIT // Número de identificación tributaria
+  CE  // Cédula de extranjería
+  TI  // Tarjeta de identidad
+  PP  // Pasaporte
+  DIE // Documento de identificación extranjero
+}
+
+enum TaxRegime {
+  RESPONSABLE_IVA
+  NO_RESPONSABLE_IVA
+}
+
+// Códigos DIAN en XML: 01=IVA, 02=Impoconsumo (IC), 03=ICA. Retenciones: RETEIVA, RETEFUENTE.
+enum TaxType {
+  IVA          // 01 - IVA
+  IC           // 02 - Impoconsumo
+  ICA          // 03 - ICA
+  INC          // Impuesto Nacional al Consumo (legacy)
+  EXCLUIDO
+  EXENTO
+  RETEIVA      // Retención en la fuente por IVA
+  RETEFUENTE   // Retención en la fuente
+}
+
+enum InvoiceType {
+  FACTURA
+  NOTA_CREDITO
+  NOTA_DEBITO
+  POS
+}
+
+enum DianStatus {
+  PENDIENTE
+  ENVIADA
+  ACEPTADA
+  RECHAZADA
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PARCIAL
+  PAGADA
+  ANULADA
+}
+
+enum PaymentMethod {
+  EFECTIVO        // DIAN: 10
+  TARJETA_CREDITO // DIAN: 48
+  TARJETA_DEBITO  // DIAN: 49
+  TRANSFERENCIA   // DIAN: 31
+  NEQUI
+  DAVIPLATA
+  OTRO            // DIAN: ZZZ
+}
+
+enum StockMovementType {
+  VENTA           // Salida por venta
+  COMPRA          // Entrada por compra a proveedor
+  AJUSTE_ENTRADA  // Ajuste manual: entrada
+  AJUSTE_SALIDA   // Ajuste manual: salida
+  DEVOLUCION      // Devolución de cliente
+  PERDIDA         // Pérdida, robo, daño
+}
+
+enum ExpenseCategory {
+  ARRIENDO
+  SERVICIOS_PUBLICOS
+  NOMINA
+  IMPUESTOS
+  INSUMOS
+  TRANSPORTE
+  MARKETING
+  MANTENIMIENTO
+  OTRO
+}
+
+// =============================================
+// MODELS
+// =============================================
+
+model Organization {
+  id                    String   @id @default(uuid())
+  nit                   String   @unique
+  dv                    String?  // Dígito de verificación (NIT). Obligatorio para XML DIAN.
+  businessName          String   // Razón social
+  tradeName             String?  // Nombre comercial
+  address               String
+  city                  String
+  department            String
+  phone                 String?
+  email                 String
+  economicActivityCode  String?  // Código CIIU
+  taxRegime             TaxRegime @default(NO_RESPONSABLE_IVA)
+  usesDian              Boolean  @default(false) // true = facturación electrónica DIAN; false = solo uso interno
+  logoUrl               String?
+
+  users                 User[]
+  customers             Customer[]
+  products              Product[]
+  categories            Category[]
+  invoices              Invoice[]
+  invoiceResolutions    InvoiceResolution[]
+  cashSessions          CashSession[]
+  suppliers             Supplier[]
+  stockMovements        StockMovement[]
+  expenses              Expense[]
+  auditLogs             AuditLog[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  password       String        // Hash de la contraseña
+  name           String
+  role           UserRole      @default(CASHIER)
+  isActive       Boolean       @default(true)
+
+  organizationId String?       // Nullable: SUPER_ADMIN no pertenece a una org
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+
+  invoicesCreated Invoice[]
+  cashSessions    CashSession[]
+  auditLogs       AuditLog[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+}
+
+model Customer {
+  id                      String    @id @default(uuid())
+  idType                  IdType    @default(CC)
+  idNumber                String
+  dv                      String?   // Dígito de verificación (cuando idType = NIT). Para XML DIAN.
+  name                    String    // Razón social o nombre completo
+  email                   String?
+  phone                   String?
+  address                 String?
+  city                    String?
+  department              String?
+  taxRegime               TaxRegime @default(NO_RESPONSABLE_IVA)
+  fiscalResponsibilities  String?   // Códigos separados por coma: "O-13,R-99-PN"
+
+  organizationId          String
+  organization            Organization @relation(fields: [organizationId], references: [id])
+
+  invoices                Invoice[]
+
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@unique([idNumber, organizationId])
+  @@index([organizationId])
+}
+
+model Category {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  products       Product[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+}
+
+model Product {
+  id             String       @id @default(uuid())
+  internalCode   String       // Código interno
+  barcode        String?      // Nullable: no todos tienen código de barras
+  name           String
+  description    String?
+  salePrice      Decimal      @db.Decimal(12, 2)
+  costPrice      Decimal      @default(0) @db.Decimal(12, 2)
+  unitOfMeasure  String       @default("94") // Código DIAN: 94=unidad, KGM=kg, LTR=litro
+  taxType        TaxType      @default(EXCLUIDO) // Impuesto principal (para el 90% de casos)
+  taxPercentage  Decimal      @default(0) @db.Decimal(5, 2) // 0, 5, 19
+  stock          Int          @default(0)
+  minStock       Int          @default(0)
+  isActive       Boolean      @default(true)
+
+  categoryId     String?
+  category       Category?    @relation(fields: [categoryId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  additionalTaxes ProductTax[]   // Impuestos adicionales (ej. IVA 19% + Impoconsumo 8%)
+  invoiceItems   InvoiceItem[]
+  stockMovements StockMovement[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([internalCode, organizationId])
+  @@unique([barcode, organizationId])
+  @@index([organizationId])
+  @@index([categoryId])
+}
+
+// Impuestos adicionales por producto (múltiples impuestos: IVA + IC, bolsas con impuesto fijo, etc.)
+model ProductTax {
+  id          String   @id @default(uuid())
+  taxType     TaxType  // IC, ICA, etc. (mapear a código DIAN 01, 02, 03)
+  percentage  Decimal  @db.Decimal(5, 2) // 0 para impuesto fijo
+  fixedAmount Decimal? @db.Decimal(12, 2) // Opcional: monto fijo (ej. bolsas plásticas)
+
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+}
+
+model Supplier {
+  id             String       @id @default(uuid())
+  idType         IdType       @default(NIT)
+  idNumber       String
+  name           String       // Razón social del proveedor
+  contactName    String?      // Nombre del contacto
+  email          String?
+  phone          String?
+  address        String?
+  city           String?
+  department     String?
+  notes          String?      @db.Text
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  stockMovements StockMovement[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([idNumber, organizationId])
+  @@index([organizationId])
+}
+
+// Sirve tanto para DIAN (resolución formal) como para numeración interna (tickets / facturas sin DIAN).
+// Sin DIAN: solo se usan prefix + currentNumber (ej. "TICK-0001", "FACT-0001"). Los demás campos pueden ser null.
+model InvoiceResolution {
+  id               String       @id @default(uuid())
+  name             String?      // Ej. "Tickets caja", "Facturas 2025" (útil cuando no hay resolución DIAN)
+  resolutionNumber String?      // Número de resolución DIAN (obligatorio solo si usesDian)
+  prefix           String       // Prefijo: "SETT", "FE", "TICK", "FACT", etc.
+  rangeStart       Int          // Inicio del rango (1, 1, etc.)
+  rangeEnd         Int          // Fin del rango (999999, 9999, etc.)
+  currentNumber    Int          // Consecutivo actual (se incrementa al emitir)
+  startDate        DateTime?    // Vigencia inicio (solo DIAN)
+  endDate          DateTime?    // Vigencia fin (solo DIAN)
+  technicalKey     String?      // Clave técnica para CUFE (solo DIAN)
+  isActive         Boolean      @default(true)
+
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id])
+
+  invoices         Invoice[]
+
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([organizationId])
+}
+
+model Invoice {
+  id              String        @id @default(uuid())
+  type            InvoiceType   @default(FACTURA)
+  invoiceNumber   String        // Número con prefijo: "SETT-001"
+  cufe            String?       // Código Único de Facturación Electrónica
+  issueDate       DateTime      @default(now())
+  dueDate         DateTime?
+  subtotal        Decimal       @db.Decimal(12, 2)
+  taxTotal        Decimal       @default(0) @db.Decimal(12, 2)
+  discountTotal   Decimal       @default(0) @db.Decimal(12, 2)
+  total           Decimal       @db.Decimal(12, 2)
+  dianStatus      DianStatus    @default(PENDIENTE)
+  paymentStatus   PaymentStatus @default(PENDIENTE)
+  qrData          String?       @db.Text
+  xmlUrl          String?
+  pdfUrl          String?
+  notes           String?       @db.Text
+
+  // Nota Crédito / Nota Débito: referencia a la factura que se corrige (BillingReference en XML DIAN)
+  parentInvoiceId String?
+  parentInvoice   Invoice?      @relation("InvoiceToCorrection", fields: [parentInvoiceId], references: [id])
+  corrections     Invoice[]    @relation("InvoiceToCorrection")
+
+  customerId      String
+  customer        Customer      @relation(fields: [customerId], references: [id])
+
+  resolutionId    String?
+  resolution      InvoiceResolution? @relation(fields: [resolutionId], references: [id])
+
+  createdByUserId String
+  createdBy       User          @relation(fields: [createdByUserId], references: [id])
+
+  cashSessionId   String?
+  cashSession     CashSession?  @relation(fields: [cashSessionId], references: [id])
+
+  organizationId  String
+  organization    Organization  @relation(fields: [organizationId], references: [id])
+
+  items           InvoiceItem[]
+  payments        Payment[]
+  dianLogs        DianLog[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@unique([invoiceNumber, organizationId])
+  @@index([organizationId])
+  @@index([organizationId, issueDate]) // Dashboard: ventas por rango de fechas
+  @@index([customerId])
+  @@index([createdByUserId])
+  @@index([resolutionId])
+  @@index([cashSessionId])
+  @@index([parentInvoiceId])
+}
+
+model InvoiceItem {
+  id            String   @id @default(uuid())
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(12, 2)
+  discount      Decimal  @default(0) @db.Decimal(12, 2)
+  taxPercentage Decimal  @default(0) @db.Decimal(5, 2)
+  taxAmount     Decimal  @default(0) @db.Decimal(12, 2)
+  taxDianCode   String?  // Código DIAN del impuesto principal: "01"=IVA, "02"=IC, "03"=ICA
+  subtotal      Decimal  @db.Decimal(12, 2)
+  total         Decimal  @db.Decimal(12, 2)
+
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id])
+
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  taxBreakdown  InvoiceItemTax[] // Desglose por cada impuesto (múltiples impuestos por línea)
+
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+// Desglose de impuestos por línea (DIAN: varias líneas de impuesto por ítem)
+model InvoiceItemTax {
+  id            String   @id @default(uuid())
+  dianCode      String   // "01", "02", "03" (IVA, IC, ICA)
+  taxBase       Decimal  @db.Decimal(12, 2) // Base gravable
+  taxPercentage Decimal  @db.Decimal(5, 2)
+  taxAmount     Decimal  @db.Decimal(12, 2)
+
+  invoiceItemId String
+  invoiceItem   InvoiceItem @relation(fields: [invoiceItemId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
+
+  @@index([invoiceItemId])
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  paymentMethod PaymentMethod @default(EFECTIVO)
+  amount        Decimal       @db.Decimal(12, 2)
+  paymentDate   DateTime      @default(now())
+  reference     String?       // Referencia de transacción
+
+  invoiceId     String
+  invoice       Invoice       @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime      @default(now())
+
+  @@index([invoiceId])
+}
+
+// =============================================
+// NUEVAS TABLAS: POS, DIAN, INVENTARIO, AUDITORÍA
+// =============================================
+
+model CashSession {
+  id             String       @id @default(uuid())
+  openingAmount  Decimal      @db.Decimal(12, 2) // Efectivo al abrir caja
+  closingAmount  Decimal?     @db.Decimal(12, 2) // Efectivo al cerrar caja
+  expectedAmount Decimal?     @db.Decimal(12, 2) // Monto esperado (calculado)
+  difference     Decimal?     @db.Decimal(12, 2) // Diferencia (sobrante/faltante)
+  // Desglose por método de pago al cierre (cuadre de caja)
+  totalCash      Decimal?     @db.Decimal(12, 2) // Total cobrado en efectivo
+  totalCard      Decimal?     @db.Decimal(12, 2) // Total tarjeta (crédito + débito)
+  totalTransfer  Decimal?     @db.Decimal(12, 2) // Total transferencias / billeteras
+  openedAt       DateTime     @default(now())
+  closedAt       DateTime?
+  notes          String?      @db.Text
+  isClosed       Boolean      @default(false)
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  invoices       Invoice[]
+
+  createdAt      DateTime     @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model DianLog {
+  id             String   @id @default(uuid())
+  action         String   // "ENVIAR_FACTURA", "CONSULTAR_ESTADO", "ENVIAR_NOTA_CREDITO"
+  requestXml     String?  @db.LongText // XML enviado a la DIAN
+  responseXml    String?  @db.LongText // XML de respuesta de la DIAN
+  statusCode     Int?     // Código HTTP de respuesta
+  dianResponseCode String? // Código de respuesta DIAN
+  success        Boolean  @default(false)
+  errorMessage   String?  @db.Text
+
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@index([invoiceId])
+}
+
+model StockMovement {
+  id             String            @id @default(uuid())
+  type           StockMovementType
+  quantity       Int               // Positivo=entrada, Negativo=salida
+  previousStock  Int               // Stock antes del movimiento
+  newStock       Int               // Stock después del movimiento
+  unitCost       Decimal?          @db.Decimal(12, 2) // Costo unitario (COMPRA: actualiza costo promedio ponderado / kardex)
+  reason         String?           // Motivo del ajuste
+  reference      String?           // Referencia (# factura, # orden compra, etc.)
+
+  productId      String
+  product        Product           @relation(fields: [productId], references: [id])
+
+  supplierId     String?
+  supplier       Supplier?         @relation(fields: [supplierId], references: [id])
+
+  organizationId String
+  organization   Organization      @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime          @default(now())
+
+  @@index([productId])
+  @@index([supplierId])
+  @@index([organizationId])
+}
+
+model Expense {
+  id             String          @id @default(uuid())
+  category       ExpenseCategory @default(OTRO)
+  description    String
+  amount         Decimal         @db.Decimal(12, 2)
+  expenseDate    DateTime        @default(now())
+  reference      String?         // Número de factura del gasto, recibo, etc.
+  notes          String?         @db.Text
+
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([organizationId])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  action         String   // "CREATE", "UPDATE", "DELETE"
+  entity         String   // "Invoice", "Product", "Customer", etc.
+  entityId       String   // ID del registro afectado
+  oldValues      String?  @db.LongText // JSON con valores anteriores
+  newValues      String?  @db.LongText // JSON con valores nuevos
+  ipAddress      String?
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([entity, entityId])
+}
