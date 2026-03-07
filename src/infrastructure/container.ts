@@ -13,11 +13,19 @@ import { createUserRouter } from '../modules/user/routes/user.routes';
 import { PrismaCategoryRepository } from '../modules/category/repositories/PrismaCategoryRepository';
 import { CategoryController } from '../modules/category/controllers/CategoryController';
 import { createCategoryRouter } from '../modules/category/routes/category.routes';
+import { PrismaCustomerRepository } from '../modules/customer/repositories/PrismaCustomerRepository';
+import { CustomerController } from '../modules/customer/controllers/CustomerController';
+import { createCustomerRouter } from '../modules/customer/routes/customer.routes';
+import { PrismaProductRepository } from '../modules/product/repositories/PrismaProductRepository';
+import { ProductController } from '../modules/product/controllers/ProductController';
+import { createProductRouter } from '../modules/product/routes/product.routes';
 import {
     DatabaseRepositoryToken,
     OrganizationRepositoryToken,
     UserRepositoryToken,
     CategoryRepositoryToken,
+    CustomerRepositoryToken,
+    ProductRepositoryToken,
 } from '../shared/container/tokens';
 
 // Registrar implementaciones para los tokens (interfaces)
@@ -25,17 +33,23 @@ tsyringeContainer.register(DatabaseRepositoryToken, { useClass: PrismaDatabaseRe
 tsyringeContainer.register(OrganizationRepositoryToken, { useClass: PrismaOrganizationRepository });
 tsyringeContainer.register(UserRepositoryToken, { useClass: PrismaUserRepository });
 tsyringeContainer.register(CategoryRepositoryToken, { useClass: PrismaCategoryRepository });
+tsyringeContainer.register(CustomerRepositoryToken, { useClass: PrismaCustomerRepository });
+tsyringeContainer.register(ProductRepositoryToken, { useClass: PrismaProductRepository });
 
 // Resolver controladores (sus dependencias se inyectan automáticamente)
 const healthController = tsyringeContainer.resolve(HealthController);
 const organizationController = tsyringeContainer.resolve(OrganizationController);
 const userController = tsyringeContainer.resolve(UserController);
 const categoryController = tsyringeContainer.resolve(CategoryController);
+const customerController = tsyringeContainer.resolve(CustomerController);
+const productController = tsyringeContainer.resolve(ProductController);
 
 export const container = {
     healthRouter: createHealthRouter(healthController),
     organizationRouter: createOrganizationRouter(organizationController),
     userRouter: createUserRouter(userController),
     categoryRouter: createCategoryRouter(categoryController),
+    customerRouter: createCustomerRouter(customerController),
+    productRouter: createProductRouter(productController),
     prisma,
 };

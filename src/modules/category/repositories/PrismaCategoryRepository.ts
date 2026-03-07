@@ -45,6 +45,14 @@ export class PrismaCategoryRepository implements ICategoryRepository {
         return this.mapToDomain(prismaCategory);
     }
 
+    async findAllByOrganization(organizationId: string): Promise<Category[]> {
+        const list = await prisma.category.findMany({
+            where: { organizationId },
+            orderBy: { name: 'asc' },
+        });
+        return list.map((c) => this.mapToDomain(c));
+    }
+
     private mapToDomain(prismaCategory: PrismaCategory): Category {
         const props: CategoryProps = {
             name: prismaCategory.name,

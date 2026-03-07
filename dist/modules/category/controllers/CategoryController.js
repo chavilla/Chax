@@ -13,13 +13,34 @@ exports.CategoryController = void 0;
 const tsyringe_1 = require("tsyringe");
 const CreateCategoryUseCase_1 = require("../useCases/CreateCategoryUseCase");
 const UpdateCategoryUseCase_1 = require("../useCases/UpdateCategoryUseCase");
+const GetCategoriesUseCase_1 = require("../useCases/GetCategoriesUseCase");
 const AppError_1 = require("../../../shared/errors/AppError");
 let CategoryController = class CategoryController {
     createCategoryUseCase;
     updateCategoryUseCase;
-    constructor(createCategoryUseCase, updateCategoryUseCase) {
+    getCategoriesUseCase;
+    constructor(createCategoryUseCase, updateCategoryUseCase, getCategoriesUseCase) {
         this.createCategoryUseCase = createCategoryUseCase;
         this.updateCategoryUseCase = updateCategoryUseCase;
+        this.getCategoriesUseCase = getCategoriesUseCase;
+    }
+    async getCategories(request, response) {
+        try {
+            const organizationId = request.query.organizationId;
+            const categories = await this.getCategoriesUseCase.execute(organizationId);
+            return response.status(200).json(categories.map((cat) => ({
+                id: cat.id,
+                name: cat.props.name,
+                description: cat.props.description ?? null,
+                organizationId: cat.props.organizationId,
+            })));
+        }
+        catch (err) {
+            if (err instanceof AppError_1.AppError) {
+                return response.status(err.statusCode).json({ error: err.message });
+            }
+            return response.status(500).json({ status: 'error', message: 'Internal server error' });
+        }
     }
     async create(request, response) {
         try {
@@ -70,5 +91,6 @@ exports.CategoryController = CategoryController;
 exports.CategoryController = CategoryController = __decorate([
     (0, tsyringe_1.injectable)(),
     __metadata("design:paramtypes", [CreateCategoryUseCase_1.CreateCategoryUseCase,
-        UpdateCategoryUseCase_1.UpdateCategoryUseCase])
+        UpdateCategoryUseCase_1.UpdateCategoryUseCase,
+        GetCategoriesUseCase_1.GetCategoriesUseCase])
 ], CategoryController);

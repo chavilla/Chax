@@ -13,13 +13,35 @@ exports.OrganizationController = void 0;
 const tsyringe_1 = require("tsyringe");
 const CreateOrganizationUseCase_1 = require("../useCases/CreateOrganizationUseCase");
 const UpdateOrganizationUseCase_1 = require("../useCases/UpdateOrganizationUseCase");
+const GetOrganizationsUseCase_1 = require("../useCases/GetOrganizationsUseCase");
 const AppError_1 = require("../../../shared/errors/AppError");
 let OrganizationController = class OrganizationController {
     createOrganizationUseCase;
     updateOrganizationUseCase;
-    constructor(createOrganizationUseCase, updateOrganizationUseCase) {
+    getOrganizationsUseCase;
+    constructor(createOrganizationUseCase, updateOrganizationUseCase, getOrganizationsUseCase) {
         this.createOrganizationUseCase = createOrganizationUseCase;
         this.updateOrganizationUseCase = updateOrganizationUseCase;
+        this.getOrganizationsUseCase = getOrganizationsUseCase;
+    }
+    async getOrganizations(_request, response) {
+        try {
+            const organizations = await this.getOrganizationsUseCase.execute();
+            return response.status(200).json(organizations.map((org) => ({
+                id: org.id,
+                nit: org.props.nit,
+                businessName: org.props.businessName,
+                tradeName: org.props.tradeName ?? null,
+                city: org.props.city,
+                email: org.props.email,
+            })));
+        }
+        catch (err) {
+            if (err instanceof AppError_1.AppError) {
+                return response.status(err.statusCode).json({ error: err.message });
+            }
+            return response.status(500).json({ status: 'error', message: 'Internal server error' });
+        }
     }
     async create(request, response) {
         try {
@@ -80,5 +102,6 @@ exports.OrganizationController = OrganizationController;
 exports.OrganizationController = OrganizationController = __decorate([
     (0, tsyringe_1.injectable)(),
     __metadata("design:paramtypes", [CreateOrganizationUseCase_1.CreateOrganizationUseCase,
-        UpdateOrganizationUseCase_1.UpdateOrganizationUseCase])
+        UpdateOrganizationUseCase_1.UpdateOrganizationUseCase,
+        GetOrganizationsUseCase_1.GetOrganizationsUseCase])
 ], OrganizationController);

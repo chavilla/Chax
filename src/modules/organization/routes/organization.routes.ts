@@ -8,6 +8,7 @@ import {
 
 export function createOrganizationRouter(organizationController: OrganizationController): Router {
     const router = Router();
+    router.get('/', (request, response) => organizationController.getOrganizations(request, response));
     router.post(
         '/',
         validateRequest(CreateOrganizationSchema),

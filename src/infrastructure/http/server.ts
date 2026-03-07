@@ -11,6 +11,8 @@ app.use('/health', container.healthRouter);
 app.use('/api/organizations', container.organizationRouter);
 app.use('/api/users', container.userRouter);
 app.use('/api/categories', container.categoryRouter);
+app.use('/api/customers', container.customerRouter);
+app.use('/api/products', container.productRouter);
 
 async function connectDatabase(): Promise<void> {
     try {

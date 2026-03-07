@@ -56,6 +56,13 @@ export class PrismaOrganizationRepository implements IOrganizationRepository {
         return this.mapToDomain(prismaOrg);
     }
 
+    async findAll(): Promise<Organization[]> {
+        const list = await prisma.organization.findMany({
+            orderBy: { businessName: 'asc' },
+        });
+        return list.map((org) => this.mapToDomain(org));
+    }
+
     private mapToDomain(prismaOrg: PrismaOrganization): Organization {
         const props: OrganizationProps = {
             nit: prismaOrg.nit,

@@ -2,14 +2,36 @@ import { Request, Response } from 'express';
 import { injectable } from 'tsyringe';
 import { CreateCategoryUseCase } from '../useCases/CreateCategoryUseCase';
 import { UpdateCategoryUseCase } from '../useCases/UpdateCategoryUseCase';
+import { GetCategoriesUseCase } from '../useCases/GetCategoriesUseCase';
 import { AppError } from '../../../shared/errors/AppError';
 
 @injectable()
 export class CategoryController {
     constructor(
         private readonly createCategoryUseCase: CreateCategoryUseCase,
-        private readonly updateCategoryUseCase: UpdateCategoryUseCase
+        private readonly updateCategoryUseCase: UpdateCategoryUseCase,
+        private readonly getCategoriesUseCase: GetCategoriesUseCase
     ) {}
+
+    async getCategories(request: Request, response: Response): Promise<Response> {
+        try {
+            const organizationId = request.query.organizationId as string;
+            const categories = await this.getCategoriesUseCase.execute(organizationId);
+            return response.status(200).json(
+                categories.map((cat) => ({
+                    id: cat.id,
+                    name: cat.props.name,
+                    description: cat.props.description ?? null,
+                    organizationId: cat.props.organizationId,
+                }))
+            );
+        } catch (err: unknown) {
+            if (err instanceof AppError) {
+                return response.status(err.statusCode).json({ error: err.message });
+            }
+            return response.status(500).json({ status: 'error', message: 'Internal server error' });
+        }
+    }
 
     async create(request: Request, response: Response): Promise<Response> {
         try {

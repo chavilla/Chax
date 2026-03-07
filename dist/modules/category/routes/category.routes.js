@@ -6,6 +6,7 @@ const validateRequest_1 = require("../../../shared/middlewares/validateRequest")
 const category_dtos_1 = require("../dtos/category.dtos");
 function createCategoryRouter(categoryController) {
     const router = (0, express_1.Router)();
+    router.get('/', (0, validateRequest_1.validateRequest)(category_dtos_1.GetCategoriesSchema), (request, response) => categoryController.getCategories(request, response));
     router.post('/', (0, validateRequest_1.validateRequest)(category_dtos_1.CreateCategorySchema), (request, response) => categoryController.create(request, response));
     router.put('/:id', (0, validateRequest_1.validateRequest)(category_dtos_1.UpdateCategorySchema), (request, response) => categoryController.update(request, response));
     return router;

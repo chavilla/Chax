@@ -56,6 +56,12 @@ let PrismaOrganizationRepository = class PrismaOrganizationRepository {
             return null;
         return this.mapToDomain(prismaOrg);
     }
+    async findAll() {
+        const list = await prisma_1.prisma.organization.findMany({
+            orderBy: { businessName: 'asc' },
+        });
+        return list.map((org) => this.mapToDomain(org));
+    }
     mapToDomain(prismaOrg) {
         const props = {
             nit: prismaOrg.nit,

@@ -2,14 +2,37 @@ import { Request, Response } from 'express';
 import { injectable } from 'tsyringe';
 import { CreateOrganizationUseCase } from '../useCases/CreateOrganizationUseCase';
 import { UpdateOrganizationUseCase } from '../useCases/UpdateOrganizationUseCase';
+import { GetOrganizationsUseCase } from '../useCases/GetOrganizationsUseCase';
 import { AppError } from '../../../shared/errors/AppError';
 
 @injectable()
 export class OrganizationController {
     constructor(
         private readonly createOrganizationUseCase: CreateOrganizationUseCase,
-        private readonly updateOrganizationUseCase: UpdateOrganizationUseCase
+        private readonly updateOrganizationUseCase: UpdateOrganizationUseCase,
+        private readonly getOrganizationsUseCase: GetOrganizationsUseCase
     ) {}
+
+    async getOrganizations(_request: Request, response: Response): Promise<Response> {
+        try {
+            const organizations = await this.getOrganizationsUseCase.execute();
+            return response.status(200).json(
+                organizations.map((org) => ({
+                    id: org.id,
+                    nit: org.props.nit,
+                    businessName: org.props.businessName,
+                    tradeName: org.props.tradeName ?? null,
+                    city: org.props.city,
+                    email: org.props.email,
+                }))
+            );
+        } catch (err: unknown) {
+            if (err instanceof AppError) {
+                return response.status(err.statusCode).json({ error: err.message });
+            }
+            return response.status(500).json({ status: 'error', message: 'Internal server error' });
+        }
+    }
 
     async create(request: Request, response: Response): Promise<Response> {
         try {

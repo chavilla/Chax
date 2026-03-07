@@ -42,6 +42,13 @@ let PrismaCategoryRepository = class PrismaCategoryRepository {
             return null;
         return this.mapToDomain(prismaCategory);
     }
+    async findAllByOrganization(organizationId) {
+        const list = await prisma_1.prisma.category.findMany({
+            where: { organizationId },
+            orderBy: { name: 'asc' },
+        });
+        return list.map((c) => this.mapToDomain(c));
+    }
     mapToDomain(prismaCategory) {
         const props = {
             name: prismaCategory.name,

@@ -2,6 +2,9 @@
   "name": "chasoft-server",
   "version": "1.0.0",
   "description": "",
+  "engines": {
+    "node": "^20.19 || ^22.12 || >=24.0"
+  },
   "main": "index.js",
   "scripts": {
     "dev": "node --experimental-wasm-reftypes node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/infrastructure/http/server.ts",

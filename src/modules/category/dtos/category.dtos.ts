@@ -20,5 +20,11 @@ export const UpdateCategorySchema = z.object({
     body: updateBodySchema,
 });
 
+export const GetCategoriesSchema = z.object({
+    query: z.object({
+        organizationId: z.string().uuid('organizationId must be a valid UUID'),
+    }),
+});
+
 export type CreateCategoryDTO = z.infer<typeof createBodySchema>;
 export type UpdateCategoryDTO = { id: string } & z.infer<typeof updateBodySchema>;
