@@ -10,21 +10,32 @@ import { createOrganizationRouter } from '../modules/organization/routes/organiz
 import { PrismaUserRepository } from '../modules/user/repositories/PrismaUserRepository';
 import { UserController } from '../modules/user/controllers/UserController';
 import { createUserRouter } from '../modules/user/routes/user.routes';
-import { DatabaseRepositoryToken, OrganizationRepositoryToken, UserRepositoryToken } from '../shared/container/tokens';
+import { PrismaCategoryRepository } from '../modules/category/repositories/PrismaCategoryRepository';
+import { CategoryController } from '../modules/category/controllers/CategoryController';
+import { createCategoryRouter } from '../modules/category/routes/category.routes';
+import {
+    DatabaseRepositoryToken,
+    OrganizationRepositoryToken,
+    UserRepositoryToken,
+    CategoryRepositoryToken,
+} from '../shared/container/tokens';
 
 // Registrar implementaciones para los tokens (interfaces)
 tsyringeContainer.register(DatabaseRepositoryToken, { useClass: PrismaDatabaseRepository });
 tsyringeContainer.register(OrganizationRepositoryToken, { useClass: PrismaOrganizationRepository });
 tsyringeContainer.register(UserRepositoryToken, { useClass: PrismaUserRepository });
+tsyringeContainer.register(CategoryRepositoryToken, { useClass: PrismaCategoryRepository });
 
 // Resolver controladores (sus dependencias se inyectan automáticamente)
 const healthController = tsyringeContainer.resolve(HealthController);
 const organizationController = tsyringeContainer.resolve(OrganizationController);
 const userController = tsyringeContainer.resolve(UserController);
+const categoryController = tsyringeContainer.resolve(CategoryController);
 
 export const container = {
     healthRouter: createHealthRouter(healthController),
     organizationRouter: createOrganizationRouter(organizationController),
     userRouter: createUserRouter(userController),
+    categoryRouter: createCategoryRouter(categoryController),
     prisma,
 };

@@ -1,0 +1,64 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.UpdateCategoryUseCase = void 0;
+const tsyringe_1 = require("tsyringe");
+const Category_1 = require("../domain/entities/Category");
+const AppError_1 = require("../../../shared/errors/AppError");
+const tokens_1 = require("../../../shared/container/tokens");
+let UpdateCategoryUseCase = class UpdateCategoryUseCase {
+    categoryRepository;
+    organizationRepository;
+    constructor(categoryRepository, organizationRepository) {
+        this.categoryRepository = categoryRepository;
+        this.organizationRepository = organizationRepository;
+    }
+    async execute(request) {
+        const { id, ...updates } = request;
+        const existing = await this.categoryRepository.findById(id);
+        if (!existing) {
+            throw new AppError_1.AppError('Categoría no encontrada', 404);
+        }
+        const organizationId = updates.organizationId ?? existing.props.organizationId;
+        if (updates.organizationId) {
+            const organization = await this.organizationRepository.findById(updates.organizationId);
+            if (!organization) {
+                throw new AppError_1.AppError('Organización no encontrada', 404);
+            }
+        }
+        if (updates.name !== undefined && updates.name !== existing.props.name) {
+            const exists = await this.categoryRepository.existsByNameAndOrganization(organizationId, updates.name, id);
+            if (exists) {
+                throw new AppError_1.AppError(`Ya existe una categoría con el nombre "${updates.name}" en esta organización`);
+            }
+        }
+        const mergedProps = {
+            name: updates.name ?? existing.props.name,
+            description: updates.description !== undefined ? updates.description : existing.props.description,
+            organizationId,
+            createdAt: existing.props.createdAt,
+            updatedAt: new Date(),
+        };
+        const updatedCategory = Category_1.Category.create(mergedProps, id);
+        await this.categoryRepository.save(updatedCategory);
+        return updatedCategory;
+    }
+};
+exports.UpdateCategoryUseCase = UpdateCategoryUseCase;
+exports.UpdateCategoryUseCase = UpdateCategoryUseCase = __decorate([
+    (0, tsyringe_1.injectable)(),
+    __param(0, (0, tsyringe_1.inject)(tokens_1.CategoryRepositoryToken)),
+    __param(1, (0, tsyringe_1.inject)(tokens_1.OrganizationRepositoryToken)),
+    __metadata("design:paramtypes", [Object, Object])
+], UpdateCategoryUseCase);

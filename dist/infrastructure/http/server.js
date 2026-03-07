@@ -12,6 +12,7 @@ app.use(express_1.default.json());
 app.use('/health', container_1.container.healthRouter);
 app.use('/api/organizations', container_1.container.organizationRouter);
 app.use('/api/users', container_1.container.userRouter);
+app.use('/api/categories', container_1.container.categoryRouter);
 async function connectDatabase() {
     try {
         await container_1.container.prisma.$queryRaw `SELECT 1`;

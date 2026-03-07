@@ -5,3 +5,4 @@
 export const DatabaseRepositoryToken = Symbol.for('DatabaseRepository');
 export const OrganizationRepositoryToken = Symbol.for('IOrganizationRepository');
 export const UserRepositoryToken = Symbol.for('IUserRepository');
+export const CategoryRepositoryToken = Symbol.for('ICategoryRepository');
