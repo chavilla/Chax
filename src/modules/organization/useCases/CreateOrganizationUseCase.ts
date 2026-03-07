@@ -21,7 +21,7 @@ export class CreateOrganizationUseCase implements UseCase<CreateOrganizationDTO,
         // 1. Validate if the organization already exists
         const organizationAlreadyExists = await this.organizationRepository.exists(nit);
         if (organizationAlreadyExists) {
-            throw new AppError(`Organization with NIT ${nit} already exists`);
+            throw new AppError(`Organización con NIT ${nit} ya existe`);
         }
 
         // 2. Create the domain entity
