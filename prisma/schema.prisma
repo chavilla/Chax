@@ -271,6 +271,8 @@ model Supplier {
   updatedAt      DateTime     @updatedAt
 
   @@unique([idNumber, organizationId])
+  @@unique([name, organizationId])
+  @@unique([contactName, organizationId])
   @@index([organizationId])
 }
 

@@ -13,6 +13,9 @@ app.use('/api/users', container.userRouter);
 app.use('/api/categories', container.categoryRouter);
 app.use('/api/customers', container.customerRouter);
 app.use('/api/products', container.productRouter);
+app.use('/api/suppliers', container.supplierRouter);
+app.use('/api/invoice-resolutions', container.invoiceResolutionRouter);
+app.use('/api/invoices', container.invoiceRouter);
 
 async function connectDatabase(): Promise<void> {
     try {

@@ -32,6 +32,20 @@ export const UpdateUserSchema = z.object({
     body: updateBodySchema,
 });
 
+export const GetUserSchema = z.object({
+    params: z.object({
+        id: z.string().uuid('Invalid user ID'),
+    }),
+});
+
+export const GetUsersSchema = z.object({
+    query: z.object({
+        organizationId: z.string().uuid('organizationId debe ser un UUID'),
+    }),
+});
+
+export const GetAllUsersSchema = z.object({});
+
 // --- DTOs (tipos inferidos) ---
 
 export type CreateUserDTO = z.infer<typeof createBodySchema>;

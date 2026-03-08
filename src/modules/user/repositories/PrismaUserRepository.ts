@@ -49,6 +49,21 @@ export class PrismaUserRepository implements IUserRepository {
         return this.mapToDomain(prismaUser);
     }
 
+    async findAllByOrganization(organizationId: string): Promise<User[]> {
+        const list = await prisma.user.findMany({
+            where: { organizationId },
+            orderBy: { name: 'asc' },
+        });
+        return list.map((u) => this.mapToDomain(u));
+    }
+
+    async findAll(): Promise<User[]> {
+        const list = await prisma.user.findMany({
+            orderBy: { name: 'asc' },
+        });
+        return list.map((u) => this.mapToDomain(u));
+    }
+
     private mapToDomain(prismaUser: PrismaUser): User {
         const props: UserProps = {
             email: prismaUser.email,

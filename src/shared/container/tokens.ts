@@ -8,3 +8,6 @@ export const UserRepositoryToken = Symbol.for('IUserRepository');
 export const CategoryRepositoryToken = Symbol.for('ICategoryRepository');
 export const CustomerRepositoryToken = Symbol.for('ICustomerRepository');
 export const ProductRepositoryToken = Symbol.for('IProductRepository');
+export const SupplierRepositoryToken = Symbol.for('ISupplierRepository');
+export const InvoiceResolutionRepositoryToken = Symbol.for('IInvoiceResolutionRepository');
+export const InvoiceRepositoryToken = Symbol.for('IInvoiceRepository');

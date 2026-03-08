@@ -19,6 +19,15 @@ import { createCustomerRouter } from '../modules/customer/routes/customer.routes
 import { PrismaProductRepository } from '../modules/product/repositories/PrismaProductRepository';
 import { ProductController } from '../modules/product/controllers/ProductController';
 import { createProductRouter } from '../modules/product/routes/product.routes';
+import { PrismaSupplierRepository } from '../modules/supplier/repositories/PrismaSupplierRepository';
+import { SupplierController } from '../modules/supplier/controllers/SupplierController';
+import { createSupplierRouter } from '../modules/supplier/routes/supplier.routes';
+import { PrismaInvoiceResolutionRepository } from '../modules/invoiceResolution/repositories/PrismaInvoiceResolutionRepository';
+import { InvoiceResolutionController } from '../modules/invoiceResolution/controllers/InvoiceResolutionController';
+import { createInvoiceResolutionRouter } from '../modules/invoiceResolution/routes/invoiceResolution.routes';
+import { PrismaInvoiceRepository } from '../modules/invoice/repositories/PrismaInvoiceRepository';
+import { InvoiceController } from '../modules/invoice/controllers/InvoiceController';
+import { createInvoiceRouter } from '../modules/invoice/routes/invoice.routes';
 import {
     DatabaseRepositoryToken,
     OrganizationRepositoryToken,
@@ -26,6 +35,9 @@ import {
     CategoryRepositoryToken,
     CustomerRepositoryToken,
     ProductRepositoryToken,
+    SupplierRepositoryToken,
+    InvoiceResolutionRepositoryToken,
+    InvoiceRepositoryToken,
 } from '../shared/container/tokens';
 
 // Registrar implementaciones para los tokens (interfaces)
@@ -35,6 +47,9 @@ tsyringeContainer.register(UserRepositoryToken, { useClass: PrismaUserRepository
 tsyringeContainer.register(CategoryRepositoryToken, { useClass: PrismaCategoryRepository });
 tsyringeContainer.register(CustomerRepositoryToken, { useClass: PrismaCustomerRepository });
 tsyringeContainer.register(ProductRepositoryToken, { useClass: PrismaProductRepository });
+tsyringeContainer.register(SupplierRepositoryToken, { useClass: PrismaSupplierRepository });
+tsyringeContainer.register(InvoiceResolutionRepositoryToken, { useClass: PrismaInvoiceResolutionRepository });
+tsyringeContainer.register(InvoiceRepositoryToken, { useClass: PrismaInvoiceRepository });
 
 // Resolver controladores (sus dependencias se inyectan automáticamente)
 const healthController = tsyringeContainer.resolve(HealthController);
@@ -43,6 +58,9 @@ const userController = tsyringeContainer.resolve(UserController);
 const categoryController = tsyringeContainer.resolve(CategoryController);
 const customerController = tsyringeContainer.resolve(CustomerController);
 const productController = tsyringeContainer.resolve(ProductController);
+const supplierController = tsyringeContainer.resolve(SupplierController);
+const invoiceResolutionController = tsyringeContainer.resolve(InvoiceResolutionController);
+const invoiceController = tsyringeContainer.resolve(InvoiceController);
 
 export const container = {
     healthRouter: createHealthRouter(healthController),
@@ -51,5 +69,8 @@ export const container = {
     categoryRouter: createCategoryRouter(categoryController),
     customerRouter: createCustomerRouter(customerController),
     productRouter: createProductRouter(productController),
+    supplierRouter: createSupplierRouter(supplierController),
+    invoiceResolutionRouter: createInvoiceResolutionRouter(invoiceResolutionController),
+    invoiceRouter: createInvoiceRouter(invoiceController),
     prisma,
 };
