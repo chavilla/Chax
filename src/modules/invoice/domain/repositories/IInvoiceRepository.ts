@@ -17,6 +17,12 @@ export interface InvoiceItemWithId extends InvoiceItemToPersist {
     invoiceId: string;
 }
 
+export interface PaymentToPersist {
+    amount: number;
+    paymentMethod: string;
+    reference?: string | null;
+}
+
 export interface CreateInvoiceData {
     invoice: Invoice;
     items: InvoiceItemToPersist[];
@@ -29,11 +35,15 @@ export interface CreateInvoiceData {
         newStock: number;
         organizationId: string;
     }[];
+    payments?: PaymentToPersist[];
 }
+
+export type InvoicePaymentStatus = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'ANULADA';
 
 export interface IInvoiceRepository {
     createWithItemsAndStock(data: CreateInvoiceData): Promise<Invoice>;
     findById(id: string): Promise<Invoice | null>;
     findByIdWithItems(id: string): Promise<{ invoice: Invoice; items: InvoiceItemWithId[] } | null>;
     findAllByOrganization(organizationId: string): Promise<Invoice[]>;
+    updatePaymentStatus(invoiceId: string, paymentStatus: InvoicePaymentStatus): Promise<void>;
 }

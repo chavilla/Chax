@@ -3,6 +3,7 @@ import { injectable } from 'tsyringe';
 import { CreateInvoiceUseCase } from '../useCases/CreateInvoiceUseCase';
 import { GetInvoiceUseCase } from '../useCases/GetInvoiceUseCase';
 import { GetInvoicesUseCase } from '../useCases/GetInvoicesUseCase';
+import { RegisterPaymentToInvoiceUseCase } from '../useCases/RegisterPaymentToInvoiceUseCase';
 import { AppError } from '../../../shared/errors/AppError';
 import type { InvoiceItemWithId } from '../domain/repositories/IInvoiceRepository';
 import type { Invoice } from '../domain/entities/Invoice';
@@ -12,7 +13,8 @@ export class InvoiceController {
     constructor(
         private readonly createInvoiceUseCase: CreateInvoiceUseCase,
         private readonly getInvoiceUseCase: GetInvoiceUseCase,
-        private readonly getInvoicesUseCase: GetInvoicesUseCase
+        private readonly getInvoicesUseCase: GetInvoicesUseCase,
+        private readonly registerPaymentToInvoiceUseCase: RegisterPaymentToInvoiceUseCase
     ) {}
 
     private invoiceToResponse(invoice: Invoice) {
@@ -87,6 +89,31 @@ export class InvoiceController {
             const organizationId = request.query.organizationId as string;
             const invoices = await this.getInvoicesUseCase.execute(organizationId);
             return response.status(200).json(invoices.map((inv) => this.invoiceToResponse(inv)));
+        } catch (err: unknown) {
+            if (err instanceof AppError) {
+                return response.status(err.statusCode).json({ error: err.message });
+            }
+            return response.status(500).json({ status: 'error', message: 'Internal server error' });
+        }
+    }
+
+    async addPayment(request: Request, response: Response): Promise<Response> {
+        try {
+            const invoiceId = request.params.id as string;
+            const payment = await this.registerPaymentToInvoiceUseCase.execute({
+                invoiceId,
+                amount: request.body.amount,
+                paymentMethod: request.body.paymentMethod,
+                reference: request.body.reference,
+            });
+            return response.status(201).json({
+                id: payment.id,
+                invoiceId: payment.props.invoiceId,
+                amount: payment.props.amount,
+                paymentMethod: payment.props.paymentMethod,
+                paymentDate: payment.props.paymentDate,
+                reference: payment.props.reference ?? null,
+            });
         } catch (err: unknown) {
             if (err instanceof AppError) {
                 return response.status(err.statusCode).json({ error: err.message });

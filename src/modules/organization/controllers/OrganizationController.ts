@@ -24,6 +24,7 @@ export class OrganizationController {
                     tradeName: org.props.tradeName ?? null,
                     city: org.props.city,
                     email: org.props.email,
+                    usesDian: org.props.usesDian,
                 }))
             );
         } catch (err: unknown) {
@@ -74,6 +75,7 @@ export class OrganizationController {
                 id: organization.id,
                 nit: organization.props.nit,
                 businessName: organization.props.businessName,
+                usesDian: organization.props.usesDian,
             });
         } catch (err: unknown) {
             if (err instanceof AppError) {
@@ -98,6 +100,7 @@ export class OrganizationController {
                 id: organization.id,
                 nit: organization.props.nit,
                 businessName: organization.props.businessName,
+                usesDian: organization.props.usesDian,
             });
         } catch (err: unknown) {
             if (err instanceof AppError) {

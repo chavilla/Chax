@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 /** Campos comunes. Los de DIAN (resolutionNumber, startDate, endDate, technicalKey) son opcionales en el schema;
  * el use case exige que estén presentes cuando la organización tiene usesDian = true. */
+/** Campos requeridos para crear: prefix, rangeStart, rangeEnd, organizationId. El resto son opcionales. */
 const invoiceResolutionBodyFields = {
     name: z.string().optional().nullable(),
     resolutionNumber: z.string().optional().nullable(),

@@ -16,6 +16,7 @@ app.use('/api/products', container.productRouter);
 app.use('/api/suppliers', container.supplierRouter);
 app.use('/api/invoice-resolutions', container.invoiceResolutionRouter);
 app.use('/api/invoices', container.invoiceRouter);
+app.use('/api/cash-sessions', container.cashSessionRouter);
 
 async function connectDatabase(): Promise<void> {
     try {

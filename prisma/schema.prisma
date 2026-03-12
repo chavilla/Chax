@@ -59,6 +59,7 @@ enum DianStatus {
   ENVIADA
   ACEPTADA
   RECHAZADA
+  NO_APLICA  // Organización sin facturación electrónica DIAN
 }
 
 enum PaymentStatus {

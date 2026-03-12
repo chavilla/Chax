@@ -2,7 +2,7 @@ import { injectable } from 'tsyringe';
 import { IInvoiceRepository, InvoiceItemToPersist, InvoiceItemWithId, CreateInvoiceData } from '../domain/repositories/IInvoiceRepository';
 import { Invoice, InvoiceProps } from '../domain/entities/Invoice';
 import { prisma } from '../../../infrastructure/database/prisma';
-import { Invoice as PrismaInvoice } from '@prisma/client';
+import { Invoice as PrismaInvoice, PaymentMethod } from '@prisma/client';
 
 @injectable()
 export class PrismaInvoiceRepository implements IInvoiceRepository {
@@ -80,6 +80,19 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
                     },
                 });
             }
+
+            if (data.payments?.length) {
+                for (const p of data.payments) {
+                    await tx.payment.create({
+                        data: {
+                            invoiceId: created.id,
+                            amount: p.amount,
+                            paymentMethod: p.paymentMethod as PaymentMethod,
+                            reference: p.reference ?? null,
+                        },
+                    });
+                }
+            }
         });
 
         return invoice;
@@ -122,6 +135,13 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
             orderBy: { issueDate: 'desc' },
         });
         return list.map((r) => this.mapToDomain(r));
+    }
+
+    async updatePaymentStatus(invoiceId: string, paymentStatus: string): Promise<void> {
+        await prisma.invoice.update({
+            where: { id: invoiceId },
+            data: { paymentStatus: paymentStatus as 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'ANULADA' },
+        });
     }
 
     private mapToDomain(row: PrismaInvoice): Invoice {

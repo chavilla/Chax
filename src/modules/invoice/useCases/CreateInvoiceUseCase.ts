@@ -1,6 +1,6 @@
 import { injectable, inject } from 'tsyringe';
 import { UseCase } from '../../../shared/core/UseCase';
-import { IInvoiceRepository, InvoiceItemToPersist } from '../domain/repositories/IInvoiceRepository';
+import { IInvoiceRepository, InvoiceItemToPersist, PaymentToPersist } from '../domain/repositories/IInvoiceRepository';
 import { IOrganizationRepository } from '../../organization/domain/repositories/IOrganizationRepository';
 import { ICustomerRepository } from '../../customer/domain/repositories/ICustomerRepository';
 import { IUserRepository } from '../../user/domain/repositories/IUserRepository';
@@ -154,6 +154,19 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
 
         const totalInvoice = Number((subtotalSum + taxTotalSum - discountTotalSum).toFixed(2));
 
+        const totalPaid =
+            request.payments?.reduce((sum, p) => sum + Number(p.amount), 0) ?? 0;
+        const paymentStatus: 'PENDIENTE' | 'PARCIAL' | 'PAGADA' =
+            totalPaid >= totalInvoice ? 'PAGADA' : totalPaid > 0 ? 'PARCIAL' : 'PENDIENTE';
+
+        const paymentsToPersist: PaymentToPersist[] | undefined = request.payments?.length
+            ? request.payments.map((p) => ({
+                  amount: Number(p.amount),
+                  paymentMethod: p.paymentMethod ?? 'EFECTIVO',
+                  reference: p.reference ?? null,
+              }))
+            : undefined;
+
         const invoice = Invoice.create(
             {
                 type,
@@ -164,8 +177,8 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
                 taxTotal: Number(taxTotalSum.toFixed(2)),
                 discountTotal: Number(discountTotalSum.toFixed(2)),
                 total: totalInvoice,
-                dianStatus: 'PENDIENTE',
-                paymentStatus: 'PENDIENTE',
+                dianStatus: organization.props.usesDian ? 'PENDIENTE' : 'NO_APLICA',
+                paymentStatus,
                 customerId: request.customerId,
                 resolutionId: request.resolutionId ?? null,
                 createdByUserId: request.createdByUserId,
@@ -182,6 +195,7 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
             resolutionUpdate,
             productStockUpdates,
             stockMovements,
+            payments: paymentsToPersist,
         });
 
         return {

@@ -1,7 +1,7 @@
 import { Entity } from '../../../../shared/core/Entity';
 
 export type InvoiceType = 'FACTURA' | 'NOTA_CREDITO' | 'NOTA_DEBITO' | 'POS';
-export type DianStatus = 'PENDIENTE' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA';
+export type DianStatus = 'PENDIENTE' | 'ENVIADA' | 'ACEPTADA' | 'RECHAZADA' | 'NO_APLICA';
 export type PaymentStatus = 'PENDIENTE' | 'PARCIAL' | 'PAGADA' | 'ANULADA';
 
 export interface InvoiceProps {
