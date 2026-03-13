@@ -148,6 +148,7 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
                 quantity: -item.quantity,
                 previousStock: product.props.stock,
                 newStock,
+                unitCost: product.props.costPrice ?? null,
                 organizationId,
             });
         }

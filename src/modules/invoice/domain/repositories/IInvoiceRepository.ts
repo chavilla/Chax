@@ -33,6 +33,7 @@ export interface CreateInvoiceData {
         quantity: number;
         previousStock: number;
         newStock: number;
+        unitCost?: number | null;
         organizationId: string;
     }[];
     payments?: PaymentToPersist[];

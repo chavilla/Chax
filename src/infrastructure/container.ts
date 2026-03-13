@@ -32,6 +32,12 @@ import { PrismaPaymentRepository } from '../modules/payment/repositories/PrismaP
 import { PrismaCashSessionRepository } from '../modules/cashSession/repositories/PrismaCashSessionRepository';
 import { CashSessionController } from '../modules/cashSession/controllers/CashSessionController';
 import { createCashSessionRouter } from '../modules/cashSession/routes/cashSession.routes';
+import { PrismaExpenseRepository } from '../modules/expense/repositories/PrismaExpenseRepository';
+import { ExpenseController } from '../modules/expense/controllers/ExpenseController';
+import { createExpenseRouter } from '../modules/expense/routes/expense.routes';
+import { PrismaPurchaseRepository } from '../modules/purchase/repositories/PrismaPurchaseRepository';
+import { PurchaseController } from '../modules/purchase/controllers/PurchaseController';
+import { createPurchaseRouter } from '../modules/purchase/routes/purchase.routes';
 import {
     DatabaseRepositoryToken,
     OrganizationRepositoryToken,
@@ -44,6 +50,8 @@ import {
     InvoiceRepositoryToken,
     PaymentRepositoryToken,
     CashSessionRepositoryToken,
+    ExpenseRepositoryToken,
+    PurchaseRepositoryToken,
 } from '../shared/container/tokens';
 
 // Registrar implementaciones para los tokens (interfaces)
@@ -58,6 +66,8 @@ tsyringeContainer.register(InvoiceResolutionRepositoryToken, { useClass: PrismaI
 tsyringeContainer.register(InvoiceRepositoryToken, { useClass: PrismaInvoiceRepository });
 tsyringeContainer.register(PaymentRepositoryToken, { useClass: PrismaPaymentRepository });
 tsyringeContainer.register(CashSessionRepositoryToken, { useClass: PrismaCashSessionRepository });
+tsyringeContainer.register(ExpenseRepositoryToken, { useClass: PrismaExpenseRepository });
+tsyringeContainer.register(PurchaseRepositoryToken, { useClass: PrismaPurchaseRepository });
 
 // Resolver controladores (sus dependencias se inyectan automáticamente)
 const healthController = tsyringeContainer.resolve(HealthController);
@@ -70,6 +80,8 @@ const supplierController = tsyringeContainer.resolve(SupplierController);
 const invoiceResolutionController = tsyringeContainer.resolve(InvoiceResolutionController);
 const invoiceController = tsyringeContainer.resolve(InvoiceController);
 const cashSessionController = tsyringeContainer.resolve(CashSessionController);
+const expenseController = tsyringeContainer.resolve(ExpenseController);
+const purchaseController = tsyringeContainer.resolve(PurchaseController);
 
 export const container = {
     healthRouter: createHealthRouter(healthController),
@@ -82,5 +94,7 @@ export const container = {
     invoiceResolutionRouter: createInvoiceResolutionRouter(invoiceResolutionController),
     invoiceRouter: createInvoiceRouter(invoiceController),
     cashSessionRouter: createCashSessionRouter(cashSessionController),
+    expenseRouter: createExpenseRouter(expenseController),
+    purchaseRouter: createPurchaseRouter(purchaseController),
     prisma,
 };

@@ -13,3 +13,5 @@ export const InvoiceResolutionRepositoryToken = Symbol.for('IInvoiceResolutionRe
 export const InvoiceRepositoryToken = Symbol.for('IInvoiceRepository');
 export const PaymentRepositoryToken = Symbol.for('IPaymentRepository');
 export const CashSessionRepositoryToken = Symbol.for('ICashSessionRepository');
+export const ExpenseRepositoryToken = Symbol.for('IExpenseRepository');
+export const PurchaseRepositoryToken = Symbol.for('IPurchaseRepository');

@@ -75,6 +75,7 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
                         quantity: mov.quantity,
                         previousStock: mov.previousStock,
                         newStock: mov.newStock,
+                        unitCost: mov.unitCost != null ? Number(mov.unitCost) : null,
                         productId: mov.productId,
                         organizationId: mov.organizationId,
                     },
