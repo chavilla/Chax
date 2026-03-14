@@ -1,40 +1,23 @@
 {
-  "name": "chasoft-server",
+  "name": "chax",
   "version": "1.0.0",
-  "description": "",
+  "private": true,
+  "description": "Chax - API + Web (monorepo con workspaces)",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @chax/shared",
+    "dev:api": "npm run dev -w @chax/api",
+    "dev:web": "npm run dev -w @chax/web",
+    "build:api": "npm run build -w @chax/api",
+    "build:web": "npm run build -w @chax/web",
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "db:generate": "npm run db:generate -w @chax/api",
+    "db:migrate": "npm run db:migrate -w @chax/api"
+  },
   "engines": {
     "node": "^20.19 || ^22.12 || >=24.0"
-  },
-  "main": "index.js",
-  "scripts": {
-    "dev": "node --experimental-wasm-reftypes node_modules/ts-node-dev/lib/bin.js --respawn --transpile-only src/infrastructure/http/server.ts",
-    "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:migrate:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "@prisma/adapter-mariadb": "^7.4.2",
-    "@prisma/client": "^7.4.2",
-    "dotenv": "^17.3.1",
-    "express": "^5.2.1",
-    "mariadb": "^3.5.1",
-    "prisma": "^7.4.2",
-    "reflect-metadata": "^0.2.2",
-    "tsyringe": "^4.10.0",
-    "zod": "^4.3.6"
-  },
-  "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
-    "@types/express": "^5.0.6",
-    "@types/node": "^25.3.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
   }
 }

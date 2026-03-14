@@ -2,4 +2,12 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Build outputs (cada app/paquete genera su propio dist)
+/dist
+apps/api/dist
+packages/shared/dist
+
+# Next.js
+.next
+
 /generated/prisma
