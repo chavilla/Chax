@@ -5,11 +5,13 @@ import { UpdateOrganizationDTO } from '../dtos/organization.dtos';
 import { Organization } from '../domain/entities/Organization';
 import { AppError } from '../../../shared/errors/AppError';
 import { OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateOrganizationUseCase implements UseCase<UpdateOrganizationDTO, Organization> {
     constructor(
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateOrganizationDTO): Promise<Organization> {
@@ -40,7 +42,14 @@ export class UpdateOrganizationUseCase implements UseCase<UpdateOrganizationDTO,
 
         const updatedOrganization = Organization.create(mergedProps, id);
         await this.organizationRepository.save(updatedOrganization);
-
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'Organization',
+            entityId: id,
+            oldValues: { nit: existing.props.nit, businessName: existing.props.businessName, usesDian: existing.props.usesDian },
+            newValues: { nit: updatedOrganization.props.nit, businessName: updatedOrganization.props.businessName, usesDian: updatedOrganization.props.usesDian },
+            organizationId: id,
+        });
         return updatedOrganization;
     }
 }

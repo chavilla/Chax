@@ -6,13 +6,15 @@ import { Organization } from '../domain/entities/Organization';
 import { AppError } from '../../../shared/errors/AppError';
 import { TaxRegime } from '@chax/shared';
 import { OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 type Response = Organization;
 
 @injectable()
 export class CreateOrganizationUseCase implements UseCase<CreateOrganizationDTO, Response> {
     constructor(
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     public async execute(request: CreateOrganizationDTO): Promise<Response> {
@@ -33,7 +35,13 @@ export class CreateOrganizationUseCase implements UseCase<CreateOrganizationDTO,
 
         // 3. Persist the entity
         await this.organizationRepository.save(organizationOrError);
-
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Organization',
+            entityId: organizationOrError.id,
+            newValues: { nit: organizationOrError.props.nit, businessName: organizationOrError.props.businessName, usesDian: organizationOrError.props.usesDian },
+            organizationId: organizationOrError.id,
+        });
         return organizationOrError;
     }
 }

@@ -2,41 +2,51 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ChaxLogo } from "@/components/ChaxLogo";
+import { loginApi, setToken, setStoredUser } from "@/lib/api";
 
 export default function HomePage() {
   const router = useRouter();
   const [usuario, setUsuario] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!usuario.trim()) {
-      setError("Ingresa tu usuario.");
+      setError("Ingresa tu correo.");
       return;
     }
     if (!password) {
       setError("Ingresa tu contraseña.");
       return;
     }
-    // Sin JWT por ahora: solo validamos que haya algo y redirigimos al dashboard
-    router.push("/dashboard");
+    setLoading(true);
+    try {
+      const { token, user } = await loginApi(usuario.trim(), password);
+      setToken(token);
+      setStoredUser({
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        organizationId: user.organizationId ?? null,
+      });
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-slate-50 dark:bg-slate-950">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-indigo-600 text-white text-xl font-bold shadow-lg mb-4">
-            C
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-            Chax
-          </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Facturación e inventario
-          </p>
+        <div className="mb-8">
+          <ChaxLogo size="lg" showWordmark showTagline layout="vertical" />
         </div>
 
         <form
@@ -59,11 +69,11 @@ export default function HomePage() {
                 htmlFor="usuario"
                 className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5"
               >
-                Usuario
+                Correo
               </label>
               <input
                 id="usuario"
-                type="text"
+                type="email"
                 value={usuario}
                 onChange={(e) => setUsuario(e.target.value)}
                 placeholder="Correo o usuario"
@@ -93,15 +103,12 @@ export default function HomePage() {
 
           <button
             type="submit"
-            className="mt-6 w-full py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-colors"
+            disabled={loading}
+            className="mt-6 w-full py-2.5 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Ingresar
+            {loading ? "Entrando…" : "Ingresar"}
           </button>
         </form>
-
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          Sin autenticación por ahora. Cualquier usuario y contraseña te llevan al dashboard.
-        </p>
       </div>
     </main>
   );

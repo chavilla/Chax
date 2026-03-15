@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { InvoiceResolutionController } from '../controllers/InvoiceResolutionController';
 import { validateRequest } from '../../../shared/middlewares/validateRequest';
+import { handleAsync } from '../../../shared/middlewares/asyncHandler';
 import {
     CreateInvoiceResolutionSchema,
     UpdateInvoiceResolutionSchema,
@@ -13,22 +14,22 @@ export function createInvoiceResolutionRouter(controller: InvoiceResolutionContr
     router.get(
         '/',
         validateRequest(GetInvoiceResolutionsSchema),
-        (req, res) => controller.getResolutions(req, res)
+        handleAsync((req, res) => controller.getResolutions(req, res))
     );
     router.get(
         '/:id',
         validateRequest(GetInvoiceResolutionSchema),
-        (req, res) => controller.getById(req, res)
+        handleAsync((req, res) => controller.getById(req, res))
     );
     router.post(
         '/',
         validateRequest(CreateInvoiceResolutionSchema),
-        (req, res) => controller.create(req, res)
+        handleAsync((req, res) => controller.create(req, res))
     );
     router.put(
         '/:id',
         validateRequest(UpdateInvoiceResolutionSchema),
-        (req, res) => controller.update(req, res)
+        handleAsync((req, res) => controller.update(req, res))
     );
     return router;
 }

@@ -46,9 +46,9 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
                 },
             });
 
-            if (data.items.length > 0) {
-                await tx.invoiceItem.createMany({
-                    data: data.items.map((item) => ({
+            for (const item of data.items) {
+                const createdItem = await tx.invoiceItem.create({
+                    data: {
                         quantity: item.quantity,
                         unitPrice: item.unitPrice,
                         discount: item.discount,
@@ -59,8 +59,19 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
                         taxDianCode: item.taxDianCode ?? null,
                         productId: item.productId,
                         invoiceId: created.id,
-                    })),
+                    },
                 });
+                if (item.taxBreakdown?.length) {
+                    await tx.invoiceItemTax.createMany({
+                        data: item.taxBreakdown.map((t) => ({
+                            invoiceItemId: createdItem.id,
+                            dianCode: t.dianCode,
+                            taxBase: t.taxBase,
+                            taxPercentage: t.taxPercentage,
+                            taxAmount: t.taxAmount,
+                        })),
+                    });
+                }
             }
 
             for (const update of data.productStockUpdates) {
@@ -110,27 +121,41 @@ export class PrismaInvoiceRepository implements IInvoiceRepository {
     }
 
     async findByIdWithItems(id: string): Promise<{ invoice: Invoice; items: InvoiceItemWithId[] } | null> {
-        type InvoiceWithItemsArgs = { where: { id: string }; include: { items: true } };
+        type InvoiceWithItemsArgs = {
+            where: { id: string };
+            include: { items: { include: { taxBreakdown: true } } };
+        };
         type InvoiceWithItems = NonNullable<Awaited<ReturnType<typeof prisma.invoice.findUnique<InvoiceWithItemsArgs>>>>;
         const row = await prisma.invoice.findUnique({
             where: { id },
-            include: { items: true },
+            include: { items: { include: { taxBreakdown: true } } },
         });
         if (!row) return null;
         const invoice = this.mapToDomain(row as PrismaInvoice);
-        const items: InvoiceItemWithId[] = (row as InvoiceWithItems).items.map((i: InvoiceWithItems['items'][number]) => ({
-            id: i.id,
-            invoiceId: i.invoiceId,
-            productId: i.productId,
-            quantity: i.quantity,
-            unitPrice: Number(i.unitPrice),
-            discount: Number(i.discount),
-            taxPercentage: Number(i.taxPercentage),
-            taxAmount: Number(i.taxAmount),
-            subtotal: Number(i.subtotal),
-            total: Number(i.total),
-            taxDianCode: i.taxDianCode ?? null,
-        }));
+        const items: InvoiceItemWithId[] = (row as InvoiceWithItems).items.map(
+            (i: InvoiceWithItems['items'][number]) => ({
+                id: i.id,
+                invoiceId: i.invoiceId,
+                productId: i.productId,
+                quantity: i.quantity,
+                unitPrice: Number(i.unitPrice),
+                discount: Number(i.discount),
+                taxPercentage: Number(i.taxPercentage),
+                taxAmount: Number(i.taxAmount),
+                subtotal: Number(i.subtotal),
+                total: Number(i.total),
+                taxDianCode: i.taxDianCode ?? null,
+                taxBreakdown: (i as { taxBreakdown?: Array<{ id: string; dianCode: string; taxBase: unknown; taxPercentage: unknown; taxAmount: unknown }> }).taxBreakdown?.map(
+                    (t) => ({
+                        id: t.id,
+                        dianCode: t.dianCode,
+                        taxBase: Number(t.taxBase),
+                        taxPercentage: Number(t.taxPercentage),
+                        taxAmount: Number(t.taxAmount),
+                    })
+                ),
+            })
+        );
         return { invoice, items };
     }
 

@@ -133,12 +133,30 @@ export interface UpdateSupplierDTO extends Partial<CreateSupplierDTO> {
 }
 
 // --- Invoice ---
+/** Desglose de impuesto por línea (DIAN). Opcional al crear ítem de factura. */
+export interface InvoiceItemTaxBreakdownInput {
+  dianCode: string;
+  taxBase: number;
+  taxPercentage: number;
+  taxAmount: number;
+}
+
 export interface CreateInvoiceItemInput {
   productId: string;
   quantity: number;
   unitPrice?: number;
   discount?: number;
   taxPercentage?: number;
+  taxBreakdown?: InvoiceItemTaxBreakdownInput[];
+}
+
+// --- InvoiceItemTax ---
+export interface CreateInvoiceItemTaxDTO {
+  invoiceItemId: string;
+  dianCode: string;
+  taxBase: number;
+  taxPercentage: number;
+  taxAmount: number;
 }
 
 export interface CreateInvoicePaymentInput {

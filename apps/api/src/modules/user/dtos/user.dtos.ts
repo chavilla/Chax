@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { UserRole } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 // --- Schemas (fuente única de verdad) ---
 
@@ -10,6 +11,7 @@ const userBodyFields = {
     role: z.nativeEnum(UserRole).optional(),
     isActive: z.boolean().optional(),
     organizationId: z.string().uuid('Invalid organization ID').nullable().optional(),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(userBodyFields);

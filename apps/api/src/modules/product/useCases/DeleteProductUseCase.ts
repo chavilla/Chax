@@ -3,13 +3,15 @@ import { UseCase } from '../../../shared/core/UseCase';
 import { IProductRepository } from '../domain/repositories/IProductRepository';
 import { AppError } from '../../../shared/errors/AppError';
 import { ProductRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
-type DeleteProductDTO = { id: string; organizationId: string };
+type DeleteProductDTO = { id: string; organizationId: string; performedByUserId?: string };
 
 @injectable()
 export class DeleteProductUseCase implements UseCase<DeleteProductDTO, void> {
     constructor(
-        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository
+        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: DeleteProductDTO): Promise<void> {
@@ -40,6 +42,13 @@ export class DeleteProductUseCase implements UseCase<DeleteProductDTO, void> {
             );
         }
 
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'DELETE',
+            entity: 'Product',
+            entityId: id,
+            oldValues: { name: product.props.name, salePrice: product.props.salePrice, organizationId: product.props.organizationId },
+            organizationId,
+        });
         await this.productRepository.delete(id);
     }
 }

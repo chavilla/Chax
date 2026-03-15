@@ -3,9 +3,9 @@ import { injectable } from 'tsyringe';
 import { CreatePurchaseUseCase } from '../useCases/CreatePurchaseUseCase';
 import { GetPurchaseUseCase } from '../useCases/GetPurchaseUseCase';
 import { GetPurchasesUseCase } from '../useCases/GetPurchasesUseCase';
-import { AppError } from '../../../shared/errors/AppError';
 import type { Purchase } from '../domain/entities/Purchase';
 import type { PurchaseItemWithId } from '../domain/repositories/IPurchaseRepository';
+import { getOrganizationIdFromRequest, getAuthContext } from '../../../shared/auth/getAuthContext';
 
 @injectable()
 export class PurchaseController {
@@ -39,49 +39,29 @@ export class PurchaseController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        try {
-            const purchase = await this.createPurchaseUseCase.execute(request.body);
-            return response.status(201).json(this.purchaseToResponse(purchase));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            const message = err instanceof Error ? err.message : 'Internal server error';
-            console.error('[PurchaseController.create]', err);
-            return response.status(500).json({ status: 'error', message });
-        }
+        const ctx = getAuthContext(request, response, 'body');
+        if (!ctx) return response;
+        const purchase = await this.createPurchaseUseCase.execute({
+            ...request.body,
+            organizationId: ctx.organizationId,
+            performedByUserId: ctx.userId,
+        });
+        return response.status(201).json(this.purchaseToResponse(purchase));
     }
 
     async getById(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const { purchase, items } = await this.getPurchaseUseCase.execute(id);
-            return response.status(200).json({
-                ...this.purchaseToResponse(purchase),
-                items: items.map((i) => this.itemToResponse(i)),
-            });
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            const message = err instanceof Error ? err.message : 'Internal server error';
-            console.error('[PurchaseController.getById]', err);
-            return response.status(500).json({ status: 'error', message });
-        }
+        const id = request.params.id as string;
+        const { purchase, items } = await this.getPurchaseUseCase.execute(id);
+        return response.status(200).json({
+            ...this.purchaseToResponse(purchase),
+            items: items.map((i) => this.itemToResponse(i)),
+        });
     }
 
     async getPurchases(request: Request, response: Response): Promise<Response> {
-        try {
-            const organizationId = request.query.organizationId as string;
-            const purchases = await this.getPurchasesUseCase.execute(organizationId);
-            return response.status(200).json(purchases.map((p) => this.purchaseToResponse(p)));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            const message = err instanceof Error ? err.message : 'Internal server error';
-            console.error('[PurchaseController.getPurchases]', err);
-            return response.status(500).json({ status: 'error', message });
-        }
+        const organizationId = getOrganizationIdFromRequest(request, response, 'query');
+        if (!organizationId) return response;
+        const purchases = await this.getPurchasesUseCase.execute(organizationId);
+        return response.status(200).json(purchases.map((p) => this.purchaseToResponse(p)));
     }
 }

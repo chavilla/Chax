@@ -8,12 +8,14 @@ import { User } from '../domain/entities/User';
 import { AppError } from '../../../shared/errors/AppError';
 import { UserRole } from '@chax/shared';
 import { OrganizationRepositoryToken, UserRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class CreateUserUseCase implements UseCase<CreateUserDTO, User> {
     constructor(
         @inject(UserRepositoryToken) private readonly userRepository: IUserRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     public async execute(request: CreateUserDTO): Promise<User> {
@@ -41,6 +43,16 @@ export class CreateUserUseCase implements UseCase<CreateUserDTO, User> {
         });
 
         await this.userRepository.save(user);
+        const orgId = user.props.organizationId ?? undefined;
+        if (orgId) {
+            await this.auditRecorder.recordIfUser(request.performedByUserId, {
+                action: 'CREATE',
+                entity: 'User',
+                entityId: user.id,
+                newValues: { email: user.props.email, name: user.props.name, role: user.props.role, organizationId: orgId },
+                organizationId: orgId,
+            });
+        }
         return user;
     }
 }

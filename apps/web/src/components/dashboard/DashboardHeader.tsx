@@ -1,7 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Moon, Sun, HelpCircle, Search, Menu, LogOut } from "lucide-react";
+import { getStoredUser, logout } from "@/lib/api";
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -15,6 +18,18 @@ type DashboardHeaderProps = {
 };
 
 export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
+  const router = useRouter();
+  const [userName, setUserName] = useState("Usuario");
+  useEffect(() => {
+    const user = getStoredUser();
+    setUserName(user?.name ?? user?.email ?? "Usuario");
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/");
+  };
+
   return (
     <header className="sticky top-0 z-20 flex items-center justify-between gap-2 sm:gap-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 px-3 sm:px-4 md:px-6 py-3">
       <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
@@ -28,7 +43,7 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         </button>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 truncate">
           <span className="font-medium text-slate-900 dark:text-white">
-            {getGreeting()}, Usuario
+            {getGreeting()}, {userName}
           </span>
         </p>
       </div>
@@ -65,14 +80,15 @@ export function DashboardHeader({ onMenuClick }: DashboardHeaderProps) {
         >
           Ayuda
         </Link>
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={handleLogout}
           className="inline-flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 hover:bg-slate-100 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
           title="Cerrar sesión"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Cerrar sesión</span>
-        </Link>
+        </button>
       </div>
     </header>
   );

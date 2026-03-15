@@ -4,8 +4,8 @@ import { CreateCashSessionUseCase } from '../useCases/CreateCashSessionUseCase';
 import { CloseCashSessionUseCase } from '../useCases/CloseCashSessionUseCase';
 import { GetCashSessionUseCase } from '../useCases/GetCashSessionUseCase';
 import { GetCashSessionsUseCase } from '../useCases/GetCashSessionsUseCase';
-import { AppError } from '../../../shared/errors/AppError';
 import type { CashSession } from '../domain/entities/CashSession';
+import { getOrganizationIdFromRequest, getAuthContext } from '../../../shared/auth/getAuthContext';
 
 @injectable()
 export class CashSessionController {
@@ -36,65 +36,38 @@ export class CashSessionController {
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        try {
-            const session = await this.createCashSessionUseCase.execute(request.body);
-            return response.status(201).json(this.toResponse(session));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const ctx = getAuthContext(request, response, 'body');
+        if (!ctx) return response;
+        const session = await this.createCashSessionUseCase.execute({
+            ...request.body,
+            organizationId: ctx.organizationId,
+            userId: ctx.userId,
+        });
+        return response.status(201).json(this.toResponse(session));
     }
 
     async close(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const session = await this.closeCashSessionUseCase.execute({
-                id,
-                closingAmount: request.body.closingAmount,
-                expectedAmount: request.body.expectedAmount,
-                difference: request.body.difference,
-                totalCash: request.body.totalCash,
-                totalCard: request.body.totalCard,
-                totalTransfer: request.body.totalTransfer,
-                notes: request.body.notes,
-            });
-            return response.status(200).json(this.toResponse(session));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const id = request.params.id as string;
+        const session = await this.closeCashSessionUseCase.execute({
+            id,
+            ...request.body,
+        });
+        return response.status(200).json(this.toResponse(session));
     }
 
     async getById(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const session = await this.getCashSessionUseCase.execute(id);
-            return response.status(200).json(this.toResponse(session));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const id = request.params.id as string;
+        const session = await this.getCashSessionUseCase.execute(id);
+        return response.status(200).json(this.toResponse(session));
     }
 
     async getSessions(request: Request, response: Response): Promise<Response> {
-        try {
-            const organizationId = request.query.organizationId as string;
-            const isClosedRaw = request.query.isClosed;
-            const isClosed =
-                isClosedRaw === 'true' ? true : isClosedRaw === 'false' ? false : undefined;
-            const sessions = await this.getCashSessionsUseCase.execute({ organizationId, isClosed });
-            return response.status(200).json(sessions.map((s) => this.toResponse(s)));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const organizationId = getOrganizationIdFromRequest(request, response, 'query');
+        if (!organizationId) return response;
+        const isClosedRaw = request.query.isClosed;
+        const isClosed =
+            isClosedRaw === 'true' ? true : isClosedRaw === 'false' ? false : undefined;
+        const sessions = await this.getCashSessionsUseCase.execute({ organizationId, isClosed });
+        return response.status(200).json(sessions.map((s) => this.toResponse(s)));
     }
 }

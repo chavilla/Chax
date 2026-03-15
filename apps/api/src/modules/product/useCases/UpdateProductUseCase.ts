@@ -11,13 +11,15 @@ import {
     OrganizationRepositoryToken,
     CategoryRepositoryToken,
 } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateProductUseCase implements UseCase<UpdateProductDTO, Product> {
     constructor(
         @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository,
         @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
-        @inject(CategoryRepositoryToken) private readonly categoryRepository: ICategoryRepository
+        @inject(CategoryRepositoryToken) private readonly categoryRepository: ICategoryRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateProductDTO): Promise<Product> {
@@ -113,7 +115,14 @@ export class UpdateProductUseCase implements UseCase<UpdateProductDTO, Product> 
 
         const updatedProduct = Product.create(mergedProps, id);
         await this.productRepository.save(updatedProduct);
-
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'Product',
+            entityId: id,
+            oldValues: { name: existing.props.name, salePrice: existing.props.salePrice, isActive: existing.props.isActive, organizationId: existing.props.organizationId },
+            newValues: { name: updatedProduct.props.name, salePrice: updatedProduct.props.salePrice, isActive: updatedProduct.props.isActive, organizationId: updatedProduct.props.organizationId },
+            organizationId: updatedProduct.props.organizationId,
+        });
         return updatedProduct;
     }
 }

@@ -5,7 +5,7 @@ import { UpdateUserUseCase } from '../useCases/UpdateUserUseCase';
 import { GetUserUseCase } from '../useCases/GetUserUseCase';
 import { GetUsersUseCase } from '../useCases/GetUsersUseCase';
 import { GetAllUsersUseCase } from '../useCases/GetAllUsersUseCase';
-import { AppError } from '../../../shared/errors/AppError';
+import { getOrganizationIdFromRequest, getUserId, getAuthContext } from '../../../shared/auth/getAuthContext';
 
 @injectable()
 export class UserController {
@@ -29,83 +29,43 @@ export class UserController {
     }
 
     async getById(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const user = await this.getUserUseCase.execute(id);
-            return response.status(200).json(this.toResponse(user));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const id = request.params.id as string;
+        const user = await this.getUserUseCase.execute(id);
+        return response.status(200).json(this.toResponse(user));
     }
 
     async getUsers(request: Request, response: Response): Promise<Response> {
-        try {
-            const organizationId = request.query.organizationId as string;
-            const users = await this.getUsersUseCase.execute(organizationId);
-            return response.status(200).json(users.map((u) => this.toResponse(u)));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const organizationId = getOrganizationIdFromRequest(request, response, 'query');
+        if (!organizationId) return response;
+        const users = await this.getUsersUseCase.execute(organizationId);
+        return response.status(200).json(users.map((u) => this.toResponse(u)));
     }
 
     async getAllUsers(request: Request, response: Response): Promise<Response> {
-        try {
-            const users = await this.getAllUsersUseCase.execute();
-            return response.status(200).json(users.map((u) => this.toResponse(u)));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const users = await this.getAllUsersUseCase.execute();
+        return response.status(200).json(users.map((u) => this.toResponse(u)));
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        try {
-            const { email, password, name, role, isActive, organizationId } = request.body;
-
-            const user = await this.createUserUseCase.execute({
-                email,
-                password,
-                name,
-                role,
-                isActive,
-                organizationId,
-            });
-
-            return response.status(201).json(this.toResponse(user));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const performedByUserId = getUserId(request) ?? undefined;
+        const organizationId = request.user?.organizationId ?? request.body?.organizationId;
+        const user = await this.createUserUseCase.execute({
+            ...request.body,
+            organizationId: organizationId ?? undefined,
+            performedByUserId,
+        });
+        return response.status(201).json(this.toResponse(user));
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const body = request.body as Record<string, unknown>;
-
-            const user = await this.updateUserUseCase.execute({
-                id,
-                ...body,
-            });
-
-            return response.status(200).json(this.toResponse(user));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const ctx = getAuthContext(request, response, 'body');
+        if (!ctx) return response;
+        const id = request.params.id as string;
+        const user = await this.updateUserUseCase.execute({
+            id,
+            ...request.body,
+            performedByUserId: ctx.userId,
+        });
+        return response.status(200).json(this.toResponse(user));
     }
 }

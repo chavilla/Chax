@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaxRegime } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 // --- Schemas (fuente única de verdad para forma y validación) ---
 
@@ -18,6 +19,7 @@ const organizationBodyFields = {
     /** true = facturación electrónica DIAN; false = solo POS (punto de venta) */
     usesDian: z.boolean().optional(),
     logoUrl: z.string().url('Must be a valid URL').optional(),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(organizationBodyFields);

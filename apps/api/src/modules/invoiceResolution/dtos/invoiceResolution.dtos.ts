@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 /** Campos comunes. Los de DIAN (resolutionNumber, startDate, endDate, technicalKey) son opcionales en el schema;
  * el use case exige que estén presentes cuando la organización tiene usesDian = true. */
@@ -15,6 +16,7 @@ const invoiceResolutionBodyFields = {
     technicalKey: z.string().optional().nullable(),
     isActive: z.boolean().optional(),
     organizationId: z.string().uuid('organizationId debe ser un UUID'),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(invoiceResolutionBodyFields);

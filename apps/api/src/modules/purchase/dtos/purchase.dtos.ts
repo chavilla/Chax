@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 const purchaseItemSchema = z.object({
     productId: z.string().uuid('productId debe ser un UUID'),
@@ -14,6 +15,7 @@ export const CreatePurchaseSchema = z.object({
         reference: z.string().optional().nullable(),
         notes: z.string().optional().nullable(),
         items: z.array(purchaseItemSchema).min(1, 'Debe incluir al menos un ítem'),
+        performedByUserId: performedByUserIdSchema,
     }),
 });
 

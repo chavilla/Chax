@@ -4,12 +4,14 @@ import { ICashSessionRepository } from '../domain/repositories/ICashSessionRepos
 import { CashSession } from '../domain/entities/CashSession';
 import { AppError } from '../../../shared/errors/AppError';
 import { CashSessionRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 import type { CloseCashSessionDTO } from '../dtos/cashSession.dtos';
 
 @injectable()
 export class CloseCashSessionUseCase implements UseCase<CloseCashSessionDTO, CashSession> {
     constructor(
-        @inject(CashSessionRepositoryToken) private readonly cashSessionRepository: ICashSessionRepository
+        @inject(CashSessionRepositoryToken) private readonly cashSessionRepository: ICashSessionRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CloseCashSessionDTO): Promise<CashSession> {
@@ -39,6 +41,14 @@ export class CloseCashSessionUseCase implements UseCase<CloseCashSessionDTO, Cas
         );
 
         await this.cashSessionRepository.update(updated);
+        await this.auditRecorder.recordIfUser(session.props.userId, {
+            action: 'UPDATE',
+            entity: 'CashSession',
+            entityId: session.id,
+            oldValues: { isClosed: false, closingAmount: session.props.closingAmount },
+            newValues: { isClosed: true, closingAmount: updated.props.closingAmount, totalCash: updated.props.totalCash },
+            organizationId: session.props.organizationId,
+        });
         return updated;
     }
 }

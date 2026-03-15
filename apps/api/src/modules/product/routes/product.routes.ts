@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/ProductController';
 import { validateRequest } from '../../../shared/middlewares/validateRequest';
+import { handleAsync } from '../../../shared/middlewares/asyncHandler';
 import {
     CreateProductSchema,
     UpdateProductSchema,
@@ -13,22 +14,22 @@ export function createProductRouter(productController: ProductController): Route
     router.get(
         '/',
         validateRequest(GetProductsSchema),
-        (request, response) => productController.getProducts(request, response)
+        handleAsync((req, res) => productController.getProducts(req, res))
     );
     router.post(
         '/',
         validateRequest(CreateProductSchema),
-        (request, response) => productController.create(request, response)
+        handleAsync((req, res) => productController.create(req, res))
     );
     router.put(
         '/:id',
         validateRequest(UpdateProductSchema),
-        (request, response) => productController.update(request, response)
+        handleAsync((req, res) => productController.update(req, res))
     );
     router.delete(
         '/:id',
         validateRequest(DeleteProductSchema),
-        (request, response) => productController.delete(request, response)
+        handleAsync((req, res) => productController.delete(req, res))
     );
     return router;
 }

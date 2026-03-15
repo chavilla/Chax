@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 const categoryBodyFields = {
     name: z.string().min(2, 'Name is required'),
     description: z.string().optional(),
     organizationId: z.string().uuid('Invalid organization ID'),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(categoryBodyFields);

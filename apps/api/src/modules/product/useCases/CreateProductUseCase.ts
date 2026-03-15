@@ -12,13 +12,15 @@ import {
     OrganizationRepositoryToken,
     CategoryRepositoryToken,
 } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class CreateProductUseCase implements UseCase<CreateProductDTO, Product> {
     constructor(
         @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository,
         @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
-        @inject(CategoryRepositoryToken) private readonly categoryRepository: ICategoryRepository
+        @inject(CategoryRepositoryToken) private readonly categoryRepository: ICategoryRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateProductDTO): Promise<Product> {
@@ -101,6 +103,13 @@ export class CreateProductUseCase implements UseCase<CreateProductDTO, Product> 
         });
 
         await this.productRepository.save(product);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Product',
+            entityId: product.id,
+            newValues: { name: product.props.name, salePrice: product.props.salePrice, organizationId: product.props.organizationId },
+            organizationId: product.props.organizationId,
+        });
         return product;
     }
 }

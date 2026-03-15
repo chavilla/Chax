@@ -7,12 +7,14 @@ import { Customer } from '../domain/entities/Customer';
 import { AppError } from '../../../shared/errors/AppError';
 import { IdType, TaxRegime } from '@chax/shared';
 import { CustomerRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class CreateCustomerUseCase implements UseCase<CreateCustomerDTO, Customer> {
     constructor(
         @inject(CustomerRepositoryToken) private readonly customerRepository: ICustomerRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateCustomerDTO): Promise<Customer> {
@@ -49,6 +51,13 @@ export class CreateCustomerUseCase implements UseCase<CreateCustomerDTO, Custome
         });
 
         await this.customerRepository.save(customer);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Customer',
+            entityId: customer.id,
+            newValues: { idType: customer.props.idType, idNumber: customer.props.idNumber, name: customer.props.name, organizationId: customer.props.organizationId },
+            organizationId: customer.props.organizationId,
+        });
         return customer;
     }
 }

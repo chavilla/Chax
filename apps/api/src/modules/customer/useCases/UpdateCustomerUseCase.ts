@@ -6,12 +6,14 @@ import { UpdateCustomerDTO } from '../dtos/customer.dtos';
 import { Customer } from '../domain/entities/Customer';
 import { AppError } from '../../../shared/errors/AppError';
 import { CustomerRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateCustomerUseCase implements UseCase<UpdateCustomerDTO, Customer> {
     constructor(
         @inject(CustomerRepositoryToken) private readonly customerRepository: ICustomerRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateCustomerDTO): Promise<Customer> {
@@ -72,7 +74,15 @@ export class UpdateCustomerUseCase implements UseCase<UpdateCustomerDTO, Custome
 
         const updatedCustomer = Customer.create(mergedProps, id);
         await this.customerRepository.save(updatedCustomer);
-
+        const orgId = updatedCustomer.props.organizationId;
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'Customer',
+            entityId: id,
+            oldValues: { idType: existing.props.idType, idNumber: existing.props.idNumber, name: existing.props.name, organizationId: existing.props.organizationId },
+            newValues: { idType: updatedCustomer.props.idType, idNumber: updatedCustomer.props.idNumber, name: updatedCustomer.props.name, organizationId: orgId },
+            organizationId: orgId,
+        });
         return updatedCustomer;
     }
 }

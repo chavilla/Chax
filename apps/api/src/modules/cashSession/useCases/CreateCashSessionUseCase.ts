@@ -10,6 +10,7 @@ import {
     OrganizationRepositoryToken,
     UserRepositoryToken,
 } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 import type { CreateCashSessionDTO } from '../dtos/cashSession.dtos';
 
 @injectable()
@@ -17,7 +18,8 @@ export class CreateCashSessionUseCase implements UseCase<CreateCashSessionDTO, C
     constructor(
         @inject(CashSessionRepositoryToken) private readonly cashSessionRepository: ICashSessionRepository,
         @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
-        @inject(UserRepositoryToken) private readonly userRepository: IUserRepository
+        @inject(UserRepositoryToken) private readonly userRepository: IUserRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateCashSessionDTO): Promise<CashSession> {
@@ -44,6 +46,13 @@ export class CreateCashSessionUseCase implements UseCase<CreateCashSessionDTO, C
         });
 
         await this.cashSessionRepository.save(session);
+        await this.auditRecorder.recordIfUser(request.userId, {
+            action: 'CREATE',
+            entity: 'CashSession',
+            entityId: session.id,
+            newValues: { openingAmount: session.props.openingAmount, userId: session.props.userId, organizationId: session.props.organizationId },
+            organizationId: session.props.organizationId,
+        });
         return session;
     }
 }

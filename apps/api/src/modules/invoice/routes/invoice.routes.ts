@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { InvoiceController } from '../controllers/InvoiceController';
 import { validateRequest } from '../../../shared/middlewares/validateRequest';
+import { handleAsync } from '../../../shared/middlewares/asyncHandler';
 import {
     CreateInvoiceSchema,
     GetInvoiceSchema,
@@ -13,22 +14,22 @@ export function createInvoiceRouter(controller: InvoiceController): Router {
     router.get(
         '/',
         validateRequest(GetInvoicesSchema),
-        (req, res) => controller.getInvoices(req, res)
+        handleAsync((req, res) => controller.getInvoices(req, res))
     );
     router.get(
         '/:id',
         validateRequest(GetInvoiceSchema),
-        (req, res) => controller.getById(req, res)
+        handleAsync((req, res) => controller.getById(req, res))
     );
     router.post(
         '/',
         validateRequest(CreateInvoiceSchema),
-        (req, res) => controller.create(req, res)
+        handleAsync((req, res) => controller.create(req, res))
     );
     router.post(
         '/:id/payments',
         validateRequest(RegisterPaymentSchema),
-        (req, res) => controller.addPayment(req, res)
+        handleAsync((req, res) => controller.addPayment(req, res))
     );
     return router;
 }

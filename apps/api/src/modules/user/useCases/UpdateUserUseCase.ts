@@ -7,12 +7,14 @@ import { UpdateUserDTO } from '../dtos/user.dtos';
 import { User } from '../domain/entities/User';
 import { AppError } from '../../../shared/errors/AppError';
 import { UserRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateUserUseCase implements UseCase<UpdateUserDTO, User> {
     constructor(
         @inject(UserRepositoryToken) private readonly userRepository: IUserRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateUserDTO): Promise<User> {
@@ -55,7 +57,17 @@ export class UpdateUserUseCase implements UseCase<UpdateUserDTO, User> {
 
         const updatedUser = User.create(mergedProps, id);
         await this.userRepository.save(updatedUser);
-
+        const orgId = updatedUser.props.organizationId ?? undefined;
+        if (orgId) {
+            await this.auditRecorder.recordIfUser(request.performedByUserId, {
+                action: 'UPDATE',
+                entity: 'User',
+                entityId: id,
+                oldValues: { email: existing.props.email, name: existing.props.name, role: existing.props.role, isActive: existing.props.isActive, organizationId: existing.props.organizationId },
+                newValues: { email: updatedUser.props.email, name: updatedUser.props.name, role: updatedUser.props.role, isActive: updatedUser.props.isActive, organizationId: updatedUser.props.organizationId },
+                organizationId: orgId,
+            });
+        }
         return updatedUser;
     }
 }

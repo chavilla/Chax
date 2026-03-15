@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ExpenseCategory } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 export const CreateExpenseSchema = z.object({
     body: z.object({
@@ -10,6 +11,7 @@ export const CreateExpenseSchema = z.object({
         expenseDate: z.coerce.date().optional(),
         reference: z.string().optional().nullable(),
         notes: z.string().optional().nullable(),
+        performedByUserId: performedByUserIdSchema,
     }),
 });
 

@@ -14,6 +14,7 @@ import {
   BarChart3,
   X,
 } from "lucide-react";
+import { ChaxLogo } from "@/components/ChaxLogo";
 
 const sections = [
   {
@@ -76,15 +77,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800">
           <Link
             href="/dashboard"
-            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-slate-200/80 dark:hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-3 rounded-lg p-2 -mx-2 hover:bg-slate-200/80 dark:hover:bg-slate-800 transition-colors min-w-0"
             onClick={onClose}
           >
-            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-600 text-white text-sm font-bold shadow-sm">
-              C
-            </span>
-            <span className="font-bold text-slate-900 dark:text-white">
-              Chax
-            </span>
+            <ChaxLogo size="sm" showWordmark showTagline={false} />
           </Link>
           <button
             type="button"

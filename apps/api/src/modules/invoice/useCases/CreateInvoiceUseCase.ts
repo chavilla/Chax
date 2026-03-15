@@ -17,6 +17,7 @@ import {
     ProductRepositoryToken,
     InvoiceRepositoryToken,
 } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 import { InvoiceType, DianStatus, PaymentStatus } from '@chax/shared';
 import type { CreateInvoiceDTO } from '../dtos/invoice.dtos';
 
@@ -30,7 +31,8 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
         @inject(CustomerRepositoryToken) private readonly customerRepository: ICustomerRepository,
         @inject(UserRepositoryToken) private readonly userRepository: IUserRepository,
         @inject(InvoiceResolutionRepositoryToken) private readonly resolutionRepository: IInvoiceResolutionRepository,
-        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository
+        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateInvoiceDTO): Promise<CreateInvoiceResult> {
@@ -137,6 +139,12 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
                 subtotal,
                 total,
                 taxDianCode: null,
+                taxBreakdown: item.taxBreakdown?.map((t) => ({
+                    dianCode: t.dianCode,
+                    taxBase: t.taxBase,
+                    taxPercentage: t.taxPercentage,
+                    taxAmount: t.taxAmount,
+                })),
             });
 
             subtotalSum += subtotal;
@@ -200,7 +208,13 @@ export class CreateInvoiceUseCase implements UseCase<CreateInvoiceDTO, CreateInv
             stockMovements,
             payments: paymentsToPersist,
         });
-
+        await this.auditRecorder.recordIfUser(request.createdByUserId, {
+            action: 'CREATE',
+            entity: 'Invoice',
+            entityId: invoice.id,
+            newValues: { invoiceNumber: invoice.props.invoiceNumber, total: invoice.props.total, customerId: invoice.props.customerId, organizationId },
+            organizationId,
+        });
         return {
             invoice,
             warning: isLastInResolution

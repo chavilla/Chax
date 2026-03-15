@@ -31,6 +31,15 @@ import { createInvoiceResolutionRouter } from '../modules/invoiceResolution/rout
 import { PrismaInvoiceRepository } from '../modules/invoice/repositories/PrismaInvoiceRepository';
 import { InvoiceController } from '../modules/invoice/controllers/InvoiceController';
 import { createInvoiceRouter } from '../modules/invoice/routes/invoice.routes';
+import { PrismaInvoiceItemTaxRepository } from '../modules/invoiceItemTax/repositories/PrismaInvoiceItemTaxRepository';
+import { InvoiceItemTaxController } from '../modules/invoiceItemTax/controllers/InvoiceItemTaxController';
+import { createInvoiceItemTaxRouter } from '../modules/invoiceItemTax/routes/invoiceItemTax.routes';
+import { PrismaDianLogRepository } from '../modules/dianLog/repositories/PrismaDianLogRepository';
+import { DianLogController } from '../modules/dianLog/controllers/DianLogController';
+import { createDianLogRouter } from '../modules/dianLog/routes/dianLog.routes';
+import { PrismaAuditLogRepository } from '../modules/auditLog/repositories/PrismaAuditLogRepository';
+import { AuditLogController } from '../modules/auditLog/controllers/AuditLogController';
+import { createAuditLogRouter } from '../modules/auditLog/routes/auditLog.routes';
 import { PrismaPaymentRepository } from '../modules/payment/repositories/PrismaPaymentRepository';
 import { PrismaCashSessionRepository } from '../modules/cashSession/repositories/PrismaCashSessionRepository';
 import { CashSessionController } from '../modules/cashSession/controllers/CashSessionController';
@@ -44,6 +53,8 @@ import { createPurchaseRouter } from '../modules/purchase/routes/purchase.routes
 import { PrismaStockMovementRepository } from '../modules/stockMovement/repositories/PrismaStockMovementRepository';
 import { StockMovementController } from '../modules/stockMovement/controllers/StockMovementController';
 import { createStockMovementRouter } from '../modules/stockMovement/routes/stockMovement.routes';
+import { AuthController } from '../modules/auth/controllers/AuthController';
+import { createAuthRouter } from '../modules/auth/routes/auth.routes';
 import {
     DatabaseRepositoryToken,
     OrganizationRepositoryToken,
@@ -55,6 +66,9 @@ import {
     SupplierRepositoryToken,
     InvoiceResolutionRepositoryToken,
     InvoiceRepositoryToken,
+    InvoiceItemTaxRepositoryToken,
+    DianLogRepositoryToken,
+    AuditLogRepositoryToken,
     PaymentRepositoryToken,
     CashSessionRepositoryToken,
     ExpenseRepositoryToken,
@@ -73,6 +87,9 @@ tsyringeContainer.register(ProductTaxRepositoryToken, { useClass: PrismaProductT
 tsyringeContainer.register(SupplierRepositoryToken, { useClass: PrismaSupplierRepository });
 tsyringeContainer.register(InvoiceResolutionRepositoryToken, { useClass: PrismaInvoiceResolutionRepository });
 tsyringeContainer.register(InvoiceRepositoryToken, { useClass: PrismaInvoiceRepository });
+tsyringeContainer.register(InvoiceItemTaxRepositoryToken, { useClass: PrismaInvoiceItemTaxRepository });
+tsyringeContainer.register(DianLogRepositoryToken, { useClass: PrismaDianLogRepository });
+tsyringeContainer.register(AuditLogRepositoryToken, { useClass: PrismaAuditLogRepository });
 tsyringeContainer.register(PaymentRepositoryToken, { useClass: PrismaPaymentRepository });
 tsyringeContainer.register(CashSessionRepositoryToken, { useClass: PrismaCashSessionRepository });
 tsyringeContainer.register(ExpenseRepositoryToken, { useClass: PrismaExpenseRepository });
@@ -90,10 +107,14 @@ const productTaxController = tsyringeContainer.resolve(ProductTaxController);
 const supplierController = tsyringeContainer.resolve(SupplierController);
 const invoiceResolutionController = tsyringeContainer.resolve(InvoiceResolutionController);
 const invoiceController = tsyringeContainer.resolve(InvoiceController);
+const invoiceItemTaxController = tsyringeContainer.resolve(InvoiceItemTaxController);
+const dianLogController = tsyringeContainer.resolve(DianLogController);
+const auditLogController = tsyringeContainer.resolve(AuditLogController);
 const cashSessionController = tsyringeContainer.resolve(CashSessionController);
 const expenseController = tsyringeContainer.resolve(ExpenseController);
 const purchaseController = tsyringeContainer.resolve(PurchaseController);
 const stockMovementController = tsyringeContainer.resolve(StockMovementController);
+const authController = tsyringeContainer.resolve(AuthController);
 
 export const container = {
     healthRouter: createHealthRouter(healthController),
@@ -106,9 +127,13 @@ export const container = {
     supplierRouter: createSupplierRouter(supplierController),
     invoiceResolutionRouter: createInvoiceResolutionRouter(invoiceResolutionController),
     invoiceRouter: createInvoiceRouter(invoiceController),
+    invoiceItemTaxRouter: createInvoiceItemTaxRouter(invoiceItemTaxController),
+    dianLogRouter: createDianLogRouter(dianLogController),
+    auditLogRouter: createAuditLogRouter(auditLogController),
     cashSessionRouter: createCashSessionRouter(cashSessionController),
     expenseRouter: createExpenseRouter(expenseController),
     purchaseRouter: createPurchaseRouter(purchaseController),
     stockMovementRouter: createStockMovementRouter(stockMovementController),
+    authRouter: createAuthRouter(authController),
     prisma,
 };

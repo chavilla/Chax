@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { UserController } from '../controllers/UserController';
 import { validateRequest } from '../../../shared/middlewares/validateRequest';
+import { handleAsync } from '../../../shared/middlewares/asyncHandler';
 import { CreateUserSchema, UpdateUserSchema, GetUserSchema, GetUsersSchema, GetAllUsersSchema } from '../dtos/user.dtos';
 
 export function createUserRouter(userController: UserController): Router {
@@ -8,27 +9,27 @@ export function createUserRouter(userController: UserController): Router {
     router.get(
         '/',
         validateRequest(GetUsersSchema),
-        (request, response) => userController.getUsers(request, response)
+        handleAsync((req, res) => userController.getUsers(req, res))
     );
     router.get(
         '/all',
         validateRequest(GetAllUsersSchema),
-        (request, response) => userController.getAllUsers(request, response)
+        handleAsync((req, res) => userController.getAllUsers(req, res))
     );
     router.get(
         '/:id',
         validateRequest(GetUserSchema),
-        (request, response) => userController.getById(request, response)
+        handleAsync((req, res) => userController.getById(req, res))
     );
     router.post(
         '/',
         validateRequest(CreateUserSchema),
-        (request, response) => userController.create(request, response)
+        handleAsync((req, res) => userController.create(req, res))
     );
     router.put(
         '/:id',
         validateRequest(UpdateUserSchema),
-        (request, response) => userController.update(request, response)
+        handleAsync((req, res) => userController.update(req, res))
     );
     return router;
 }

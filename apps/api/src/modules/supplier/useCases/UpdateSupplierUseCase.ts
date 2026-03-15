@@ -6,12 +6,14 @@ import { UpdateSupplierDTO } from '../dtos/supplier.dtos';
 import { Supplier } from '../domain/entities/Supplier';
 import { AppError } from '../../../shared/errors/AppError';
 import { SupplierRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateSupplierUseCase implements UseCase<UpdateSupplierDTO, Supplier> {
     constructor(
         @inject(SupplierRepositoryToken) private readonly supplierRepository: ISupplierRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateSupplierDTO): Promise<Supplier> {
@@ -95,6 +97,14 @@ export class UpdateSupplierUseCase implements UseCase<UpdateSupplierDTO, Supplie
 
         const updatedSupplier = Supplier.create(mergedProps, id);
         await this.supplierRepository.save(updatedSupplier);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'Supplier',
+            entityId: id,
+            oldValues: { name: existing.props.name, idNumber: existing.props.idNumber, organizationId: existing.props.organizationId },
+            newValues: { name: updatedSupplier.props.name, idNumber: updatedSupplier.props.idNumber, organizationId: updatedSupplier.props.organizationId },
+            organizationId: updatedSupplier.props.organizationId,
+        });
         return updatedSupplier;
     }
 }

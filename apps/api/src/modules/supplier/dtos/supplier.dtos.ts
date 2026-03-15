@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdType } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 const idNumberSchema = z
     .string()
@@ -20,6 +21,7 @@ const supplierBodyFields = {
     department: z.string().optional().nullable(),
     notes: z.string().optional().nullable(),
     organizationId: z.string().uuid('organizationId debe ser un UUID'),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(supplierBodyFields);

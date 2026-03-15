@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { IdType, TaxRegime } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 const idNumberSchema = z
     .string()
@@ -27,6 +28,7 @@ const customerBodyFields = {
     taxRegime: z.nativeEnum(TaxRegime).optional(),
     fiscalResponsibilities: z.string().optional().nullable(),
     organizationId: z.string().uuid('Invalid organization ID'),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(customerBodyFields);

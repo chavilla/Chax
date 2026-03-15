@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { CustomerController } from '../controllers/CustomerController';
 import { validateRequest } from '../../../shared/middlewares/validateRequest';
+import { handleAsync } from '../../../shared/middlewares/asyncHandler';
 import {
     CreateCustomerSchema,
     UpdateCustomerSchema,
@@ -12,17 +13,17 @@ export function createCustomerRouter(customerController: CustomerController): Ro
     router.get(
         '/',
         validateRequest(GetCustomersSchema),
-        (request, response) => customerController.getCustomers(request, response)
+        handleAsync((req, res) => customerController.getCustomers(req, res))
     );
     router.post(
         '/',
         validateRequest(CreateCustomerSchema),
-        (request, response) => customerController.create(request, response)
+        handleAsync((req, res) => customerController.create(req, res))
     );
     router.put(
         '/:id',
         validateRequest(UpdateCustomerSchema),
-        (request, response) => customerController.update(request, response)
+        handleAsync((req, res) => customerController.update(req, res))
     );
     return router;
 }

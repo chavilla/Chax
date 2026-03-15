@@ -4,8 +4,8 @@ import { CreateProductUseCase } from '../useCases/CreateProductUseCase';
 import { UpdateProductUseCase } from '../useCases/UpdateProductUseCase';
 import { GetProductsUseCase } from '../useCases/GetProductsUseCase';
 import { DeleteProductUseCase } from '../useCases/DeleteProductUseCase';
-import { AppError } from '../../../shared/errors/AppError';
 import { Product } from '../domain/entities/Product';
+import { getOrganizationIdFromRequest, getAuthContext } from '../../../shared/auth/getAuthContext';
 
 @injectable()
 export class ProductController {
@@ -37,90 +37,42 @@ export class ProductController {
     }
 
     async getProducts(request: Request, response: Response): Promise<Response> {
-        try {
-            const organizationId = request.query.organizationId as string;
-            const products = await this.getProductsUseCase.execute(organizationId);
-            return response.status(200).json(products.map((p) => this.toResponse(p)));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const organizationId = getOrganizationIdFromRequest(request, response, 'query');
+        if (!organizationId) return response;
+        const products = await this.getProductsUseCase.execute(organizationId);
+        return response.status(200).json(products.map((p) => this.toResponse(p)));
     }
 
     async create(request: Request, response: Response): Promise<Response> {
-        try {
-            const {
-                internalCode,
-                internalCodePrefix,
-                barcode,
-                name,
-                description,
-                salePrice,
-                costPrice,
-                unitOfMeasure,
-                taxType,
-                taxPercentage,
-                stock,
-                minStock,
-                isActive,
-                categoryId,
-                organizationId,
-            } = request.body;
-
-            const product = await this.createProductUseCase.execute({
-                internalCode,
-                internalCodePrefix,
-                barcode,
-                name,
-                description,
-                salePrice,
-                costPrice,
-                unitOfMeasure,
-                taxType,
-                taxPercentage,
-                stock,
-                minStock,
-                isActive,
-                categoryId,
-                organizationId,
-            });
-
-            return response.status(201).json(this.toResponse(product));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const ctx = getAuthContext(request, response, 'body');
+        if (!ctx) return response;
+        const product = await this.createProductUseCase.execute({
+            ...request.body,
+            organizationId: ctx.organizationId,
+            performedByUserId: ctx.userId,
+        });
+        return response.status(201).json(this.toResponse(product));
     }
 
     async update(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const body = request.body as Record<string, unknown>;
-            const product = await this.updateProductUseCase.execute({ id, ...body });
-            return response.status(200).json(this.toResponse(product));
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const ctx = getAuthContext(request, response, 'body');
+        if (!ctx) return response;
+        const id = request.params.id as string;
+        const product = await this.updateProductUseCase.execute({
+            id,
+            ...request.body,
+            organizationId: ctx.organizationId,
+            performedByUserId: ctx.userId,
+        });
+        return response.status(200).json(this.toResponse(product));
     }
 
     async delete(request: Request, response: Response): Promise<Response> {
-        try {
-            const id = request.params.id as string;
-            const organizationId = request.query.organizationId as string;
-            await this.deleteProductUseCase.execute({ id, organizationId });
-            return response.status(204).send();
-        } catch (err: unknown) {
-            if (err instanceof AppError) {
-                return response.status(err.statusCode).json({ error: err.message });
-            }
-            return response.status(500).json({ status: 'error', message: 'Internal server error' });
-        }
+        const organizationId = getOrganizationIdFromRequest(request, response, 'query');
+        if (!organizationId) return response;
+        const id = request.params.id as string;
+        const userId = request.user?.id ?? null;
+        await this.deleteProductUseCase.execute({ id, organizationId, performedByUserId: userId ?? undefined });
+        return response.status(204).send();
     }
 }

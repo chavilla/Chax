@@ -7,12 +7,14 @@ import { Supplier } from '../domain/entities/Supplier';
 import { AppError } from '../../../shared/errors/AppError';
 import { IdType } from '@chax/shared';
 import { SupplierRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class CreateSupplierUseCase implements UseCase<CreateSupplierDTO, Supplier> {
     constructor(
         @inject(SupplierRepositoryToken) private readonly supplierRepository: ISupplierRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateSupplierDTO): Promise<Supplier> {
@@ -70,6 +72,13 @@ export class CreateSupplierUseCase implements UseCase<CreateSupplierDTO, Supplie
         });
 
         await this.supplierRepository.save(supplier);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Supplier',
+            entityId: supplier.id,
+            newValues: { name: supplier.props.name, idNumber: supplier.props.idNumber, organizationId: supplier.props.organizationId },
+            organizationId: supplier.props.organizationId,
+        });
         return supplier;
     }
 }

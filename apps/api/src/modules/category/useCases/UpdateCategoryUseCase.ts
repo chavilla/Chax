@@ -6,12 +6,14 @@ import { UpdateCategoryDTO } from '../dtos/category.dtos';
 import { Category } from '../domain/entities/Category';
 import { AppError } from '../../../shared/errors/AppError';
 import { CategoryRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 @injectable()
 export class UpdateCategoryUseCase implements UseCase<UpdateCategoryDTO, Category> {
     constructor(
         @inject(CategoryRepositoryToken) private readonly categoryRepository: ICategoryRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateCategoryDTO): Promise<Category> {
@@ -52,7 +54,14 @@ export class UpdateCategoryUseCase implements UseCase<UpdateCategoryDTO, Categor
 
         const updatedCategory = Category.create(mergedProps, id);
         await this.categoryRepository.save(updatedCategory);
-
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'Category',
+            entityId: id,
+            oldValues: { name: existing.props.name, description: existing.props.description, organizationId: existing.props.organizationId },
+            newValues: { name: updatedCategory.props.name, description: updatedCategory.props.description, organizationId: updatedCategory.props.organizationId },
+            organizationId: updatedCategory.props.organizationId,
+        });
         return updatedCategory;
     }
 }

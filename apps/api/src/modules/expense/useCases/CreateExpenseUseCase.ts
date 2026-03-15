@@ -5,6 +5,7 @@ import { IOrganizationRepository } from '../../organization/domain/repositories/
 import { Expense } from '../domain/entities/Expense';
 import { AppError } from '../../../shared/errors/AppError';
 import { ExpenseRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 import { ExpenseCategory } from '@chax/shared';
 import type { CreateExpenseDTO } from '../dtos/expense.dtos';
 
@@ -12,7 +13,8 @@ import type { CreateExpenseDTO } from '../dtos/expense.dtos';
 export class CreateExpenseUseCase implements UseCase<CreateExpenseDTO, Expense> {
     constructor(
         @inject(ExpenseRepositoryToken) private readonly expenseRepository: IExpenseRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateExpenseDTO): Promise<Expense> {
@@ -32,6 +34,13 @@ export class CreateExpenseUseCase implements UseCase<CreateExpenseDTO, Expense> 
         });
 
         await this.expenseRepository.save(expense);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Expense',
+            entityId: expense.id,
+            newValues: { category: expense.props.category, description: expense.props.description, amount: expense.props.amount, organizationId: expense.props.organizationId },
+            organizationId: expense.props.organizationId,
+        });
         return expense;
     }
 }

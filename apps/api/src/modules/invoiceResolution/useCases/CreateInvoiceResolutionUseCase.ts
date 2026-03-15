@@ -6,6 +6,7 @@ import { CreateInvoiceResolutionDTO } from '../dtos/invoiceResolution.dtos';
 import { InvoiceResolution } from '../domain/entities/InvoiceResolution';
 import { AppError } from '../../../shared/errors/AppError';
 import { InvoiceResolutionRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 /**
  * Crea una resolución de facturación.
@@ -16,7 +17,8 @@ import { InvoiceResolutionRepositoryToken, OrganizationRepositoryToken } from '.
 export class CreateInvoiceResolutionUseCase implements UseCase<CreateInvoiceResolutionDTO, InvoiceResolution> {
     constructor(
         @inject(InvoiceResolutionRepositoryToken) private readonly resolutionRepository: IInvoiceResolutionRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreateInvoiceResolutionDTO): Promise<InvoiceResolution> {
@@ -71,6 +73,13 @@ export class CreateInvoiceResolutionUseCase implements UseCase<CreateInvoiceReso
         });
 
         await this.resolutionRepository.save(resolution);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'InvoiceResolution',
+            entityId: resolution.id,
+            newValues: { prefix: resolution.props.prefix, rangeStart: resolution.props.rangeStart, rangeEnd: resolution.props.rangeEnd, organizationId: resolution.props.organizationId },
+            organizationId: resolution.props.organizationId,
+        });
         return resolution;
     }
 }

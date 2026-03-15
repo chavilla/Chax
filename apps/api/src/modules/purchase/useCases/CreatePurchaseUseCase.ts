@@ -12,6 +12,7 @@ import {
     SupplierRepositoryToken,
     ProductRepositoryToken,
 } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 import type { CreatePurchaseDTO } from '../dtos/purchase.dtos';
 
 @injectable()
@@ -20,7 +21,8 @@ export class CreatePurchaseUseCase implements UseCase<CreatePurchaseDTO, Purchas
         @inject(PurchaseRepositoryToken) private readonly purchaseRepository: IPurchaseRepository,
         @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
         @inject(SupplierRepositoryToken) private readonly supplierRepository: ISupplierRepository,
-        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository
+        @inject(ProductRepositoryToken) private readonly productRepository: IProductRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: CreatePurchaseDTO): Promise<Purchase> {
@@ -124,7 +126,13 @@ export class CreatePurchaseUseCase implements UseCase<CreatePurchaseDTO, Purchas
             productStockUpdates,
             stockMovements,
         });
-
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'CREATE',
+            entity: 'Purchase',
+            entityId: purchase.id,
+            newValues: { supplierId: purchase.props.supplierId, total: purchase.props.total, organizationId: purchase.props.organizationId },
+            organizationId: purchase.props.organizationId,
+        });
         return purchase;
     }
 }

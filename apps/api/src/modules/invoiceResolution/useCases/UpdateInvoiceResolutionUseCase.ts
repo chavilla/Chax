@@ -6,6 +6,7 @@ import { UpdateInvoiceResolutionDTO } from '../dtos/invoiceResolution.dtos';
 import { InvoiceResolution } from '../domain/entities/InvoiceResolution';
 import { AppError } from '../../../shared/errors/AppError';
 import { InvoiceResolutionRepositoryToken, OrganizationRepositoryToken } from '../../../shared/container/tokens';
+import { AuditRecorder } from '../../../shared/audit/AuditRecorder';
 
 /**
  * Actualiza una resolución. Si la organización usa DIAN, no se pueden dejar vacíos
@@ -15,7 +16,8 @@ import { InvoiceResolutionRepositoryToken, OrganizationRepositoryToken } from '.
 export class UpdateInvoiceResolutionUseCase implements UseCase<UpdateInvoiceResolutionDTO, InvoiceResolution> {
     constructor(
         @inject(InvoiceResolutionRepositoryToken) private readonly resolutionRepository: IInvoiceResolutionRepository,
-        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository
+        @inject(OrganizationRepositoryToken) private readonly organizationRepository: IOrganizationRepository,
+        @inject(AuditRecorder) private readonly auditRecorder: AuditRecorder
     ) {}
 
     async execute(request: UpdateInvoiceResolutionDTO): Promise<InvoiceResolution> {
@@ -80,6 +82,14 @@ export class UpdateInvoiceResolutionUseCase implements UseCase<UpdateInvoiceReso
 
         const resolution = InvoiceResolution.create(mergedProps, id);
         await this.resolutionRepository.save(resolution);
+        await this.auditRecorder.recordIfUser(request.performedByUserId, {
+            action: 'UPDATE',
+            entity: 'InvoiceResolution',
+            entityId: id,
+            oldValues: { prefix: existing.props.prefix, currentNumber: existing.props.currentNumber, isActive: existing.props.isActive, organizationId: existing.props.organizationId },
+            newValues: { prefix: resolution.props.prefix, currentNumber: resolution.props.currentNumber, isActive: resolution.props.isActive, organizationId: resolution.props.organizationId },
+            organizationId: resolution.props.organizationId,
+        });
         return resolution;
     }
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { TaxType } from '@chax/shared';
+import { performedByUserIdSchema } from '../../../shared/schemas/audit';
 
 const decimalSchema = z.number().min(0, 'El valor no puede ser negativo');
 
@@ -23,6 +24,7 @@ const productBodyFields = {
     isActive: z.boolean().optional(),
     categoryId: z.string().uuid('Invalid category ID').optional().nullable(),
     organizationId: z.string().uuid('Invalid organization ID'),
+    performedByUserId: performedByUserIdSchema,
 };
 
 const createBodySchema = z.object(productBodyFields);
@@ -51,6 +53,7 @@ export const DeleteProductSchema = z.object({
     }),
     query: z.object({
         organizationId: z.string().uuid('organizationId must be a valid UUID'),
+        performedByUserId: performedByUserIdSchema,
     }),
 });
 
