@@ -21,7 +21,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-[#EFF2F5] dark:bg-slate-900">
       {/* Overlay móvil: cierra el sidebar al tocar fuera */}
       <div
         role="button"
@@ -38,9 +38,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
 
-      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 flex flex-col min-h-0 bg-[#EFF2F5] dark:bg-slate-900">
         <DashboardHeader onMenuClick={openSidebar} />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 min-h-0 overflow-auto overflow-x-hidden">{children}</main>
       </div>
     </div>
   );

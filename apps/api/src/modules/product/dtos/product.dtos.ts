@@ -43,7 +43,7 @@ export const UpdateProductSchema = z.object({
 
 export const GetProductsSchema = z.object({
     query: z.object({
-        organizationId: z.string().uuid('organizationId must be a valid UUID'),
+        organizationId: z.string().uuid('organizationId must be a valid UUID').optional(),
     }),
 });
 

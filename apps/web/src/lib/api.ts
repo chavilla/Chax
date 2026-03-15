@@ -142,3 +142,40 @@ export async function fetchProducts(organizationId?: string): Promise<ProductLis
   const query = organizationId ? `?organizationId=${encodeURIComponent(organizationId)}` : "";
   return fetchApi<ProductListItem[]>(`/api/products${query}`);
 }
+
+export type CategoryListItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  organizationId: string;
+};
+
+export async function fetchCategories(organizationId: string): Promise<CategoryListItem[]> {
+  return fetchApi<CategoryListItem[]>(
+    `/api/categories?organizationId=${encodeURIComponent(organizationId)}`
+  );
+}
+
+export type CreateProductInput = {
+  name: string;
+  description?: string | null;
+  salePrice: number;
+  costPrice?: number;
+  barcode?: string | null;
+  internalCode?: string;
+  internalCodePrefix?: string;
+  unitOfMeasure?: string;
+  taxType?: string;
+  taxPercentage?: number;
+  stock?: number;
+  minStock?: number;
+  isActive?: boolean;
+  categoryId?: string | null;
+};
+
+export async function createProduct(data: CreateProductInput): Promise<ProductListItem> {
+  return fetchApi<ProductListItem>("/api/products", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
